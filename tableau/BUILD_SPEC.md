@@ -3,10 +3,11 @@
 *Last Updated: 2026-07-15*
 
 A concrete, executable checklist for building the dashboard in Tableau Desktop/Public.
-Data source is already built: `data/clean/fda_recalls.hyper` (see
-[data-pipeline.md](../.claude/.codebase-info/data-pipeline.md) for how it was produced).
-Facts referenced below (row counts, date ranges) are current as of the last pipeline run
-— re-check `data/clean/*_report.json` if you've re-run the pipeline since.
+Both `data/clean/fda_recalls.hyper` (full Tableau Desktop) and `data/clean/recalls.csv`
++ `data/clean/events.csv` (Tableau Public — see the note in step 1) are already built
+(see [data-pipeline.md](../.claude/.codebase-info/data-pipeline.md) for how). Facts
+referenced below (row counts, date ranges) are current as of the last pipeline run — re-check
+`data/clean/*_report.json` if you've re-run the pipeline since.
 
 Data at a glance: 29,223 recalls / 7,790 events, `recall_initiation_date` spans
 2008-02-22 to 2026-06-18, 52 distinct US states/territories represented, classification
@@ -15,6 +16,21 @@ split Class II 14,673 / Class I 12,809 / Class III 1,740 / Not Yet Classified 1.
 ---
 
 ## 1. Data source setup
+
+**Tableau Public note:** the free Tableau Public desktop app restricts its Connect menu
+to a small set of file types (Text/CSV, Excel, PDF, Spatial, Statistical, JSON) and
+cannot open a standalone `.hyper` file directly — it builds its own internal extract
+when you save/publish instead. If you're on Tableau Public, skip the `.hyper` file and
+connect directly to the two CSVs instead:
+
+1. Open Tableau Public, **Connect → Text File**, select `data/clean/recalls.csv`.
+2. On the canvas, **Connect → Text File** again (or drag a new connection in) and add
+   `data/clean/events.csv`.
+3. Drag both onto the canvas and continue from step 2 below — relating on `event_id`
+   works identically whether the source is the `.hyper` file or the two CSVs.
+
+If you're on full Tableau Desktop (not Public), use the `.hyper` file — it's smaller
+(9.2 MB vs. 17 MB across both CSVs) and has date/int typing already baked in:
 
 1. Open Tableau, **Connect → To a File → More… → Hyper**, select `data/clean/fda_recalls.hyper`.
 2. Drag both `recalls` and `events` onto the canvas. Tableau should auto-detect the
@@ -27,6 +43,13 @@ split Class II 14,673 / Class I 12,809 / Class III 1,740 / Not Yet Classified 1.
    that table's grain.
 4. Rename the data source to `FDA Food Recalls` (top of the left pane) — this is what
    shows up in the published workbook.
+5. **If connecting via the CSVs**, check the four date columns on `recalls`
+   (`recall_initiation_date`, `center_classification_date`, `report_date`,
+   `termination_date`) and four on `events` landed with a Date icon (#) in the Data
+   pane, not Abc (string) — Tableau's text-file connector usually auto-detects `YYYY-MM-DD`
+   correctly, but if any came in as strings, right-click → **Change Data Type → Date**.
+   The `.hyper` file has this typing baked in already, so this step only applies to the
+   Tableau Public / CSV path.
 
 ## 2. Calculated fields
 
