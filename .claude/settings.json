@@ -1,0 +1,5 @@
+{
+  "enabledPlugins": {
+    "codebase-mapper@eigenwise-toolshed": true
+  }
+}

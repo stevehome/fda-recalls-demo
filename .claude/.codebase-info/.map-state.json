@@ -1,0 +1,13 @@
+{
+  "tool": "codebase-mapper",
+  "version": "2.5.0",
+  "mappedAt": "2026-07-15",
+  "gitCommit": null,
+  "documents": [
+    "architecture.md",
+    "data-pipeline.md",
+    "tech-landscape.md",
+    "directory-structure.md",
+    "onboarding.md"
+  ]
+}
