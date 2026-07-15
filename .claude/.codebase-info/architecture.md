@@ -22,7 +22,9 @@ Clean/prep (scripted, reproducible)  ✅ done — src/clean_recalls.py
    → dedupe, standardize categories, normalize dates, explicit null handling
 Model                                ✅ fact table (recalls.csv) + events dimension
                                          (events.csv) — src/build_events.py
-Build in Tableau                     ⬜ not started
+Hyper extract                        ✅ done — src/build_hyper.py → fda_recalls.hyper
+Build in Tableau                     ⬜ not started — requires Tableau Desktop/Public's
+                                         GUI, not scriptable from this environment
 Document                             🚧 ongoing — see data-pipeline.md
 ```
 

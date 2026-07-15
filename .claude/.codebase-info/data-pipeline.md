@@ -8,6 +8,7 @@
 src/extract_recalls.py  → data/raw/food_enforcement/*.json  (untouched API snapshots)
 src/clean_recalls.py    → data/clean/recalls.csv             (tidy fact table for Tableau)
 src/build_events.py     → data/clean/events.csv              (event-level dimension table)
+src/build_hyper.py      → data/clean/fda_recalls.hyper        (Tableau Hyper extract)
 src/profile_raw.py      → ad-hoc exploration/profiling (not part of the pipeline proper)
 ```
 
@@ -109,12 +110,31 @@ One row per `event_id` (7,790 rows): `event_id`, `num_recalls`, `status`,
 `country`, `first_recall_initiation_date`, `last_recall_initiation_date`,
 `earliest_report_date`, `event_termination_date`.
 
+## Hyper extract — `src/build_hyper.py`
+
+Run: `uv run src/build_hyper.py` (reads `recalls.csv` and `events.csv`, must run after
+both)
+
+Uses `pantab` (wraps Tableau's official Hyper API) to package both tables into a single
+`data/clean/fda_recalls.hyper` (9.2 MB, smaller than the 17 MB `recalls.csv` alone) —
+the native, optimized data source format for Tableau, so the portfolio piece doesn't
+connect to raw CSVs. Contains two tables, `recalls` and `events`; open the file directly
+in Tableau Desktop/Public and create a relationship on `event_id` (not baked into the
+extract itself — Tableau relationships are defined at the workbook/data-source layer,
+not inside a `.hyper` file). Verified by reading the extract back with `pantab` and
+confirming row counts (29,223 / 7,790), column set, and date typing all match the source
+CSVs.
+
+No Tableau workbook (`.twb`/`.twbx`) exists yet — building the actual dashboard requires
+Tableau Desktop/Public's GUI, which isn't something scriptable from here.
+
 See [architecture.md](architecture.md) for the overall pipeline stages and
 [planning/PLAN.md](../../planning/PLAN.md) for the original brainstorm.
 
 ## Re-running
 
-All three scripts are idempotent — safe to re-run. Extraction overwrites raw pages in
-place; cleaning regenerates `recalls.csv`/`cleaning_report.json` from whatever is
-currently in `data/raw/`; `build_events.py` regenerates `events.csv`/`events_report.json`
-from whatever is currently in `data/clean/recalls.csv`.
+All scripts are idempotent — safe to re-run. Extraction overwrites raw pages in place;
+cleaning regenerates `recalls.csv`/`cleaning_report.json` from whatever is currently in
+`data/raw/`; `build_events.py` regenerates `events.csv`/`events_report.json` from
+whatever is currently in `data/clean/recalls.csv`; `build_hyper.py` regenerates
+`fda_recalls.hyper` from whatever is currently in both clean CSVs.
