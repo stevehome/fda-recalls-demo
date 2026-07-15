@@ -8,7 +8,8 @@ The full data pipeline is done: extraction, cleaning, the events dimension table
 packaged Tableau Hyper extract. `data/clean/fda_recalls.hyper` (two tables: `recalls`
 29,223 rows, `events` 7,790 rows) is ready to open directly in Tableau Desktop/Public.
 No Tableau workbook exists yet — this environment can't drive Tableau's GUI, so the
-dashboard build itself is a manual next step for the user.
+dashboard build itself is a manual next step for the user, guided by
+[tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md).
 
 ## Quick start
 
@@ -26,9 +27,8 @@ uv run src/build_hyper.py        # produce data/clean/fda_recalls.hyper (run aft
 
 1. Resolve the open questions in [architecture.md](architecture.md): Tableau Public vs.
    Desktop.
-2. Open `data/clean/fda_recalls.hyper` in Tableau, relate `recalls` and `events` on
-   `event_id`, and build the workbook: map + trend-over-time + categorical breakdown +
-   a cross-filtering action, per the plan.
+2. Follow [tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md) step by step to build the
+   workbook in Tableau Desktop/Public, then save the finished `.twbx` into `tableau/`.
 3. Write up the cleaning decisions for the portfolio piece (data-pipeline.md already has
    the raw material).
 

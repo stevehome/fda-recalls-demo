@@ -12,18 +12,21 @@ codebase-mapper/
 ├── src/
 │   ├── extract_recalls.py     # pulls raw recall data from openFDA
 │   ├── clean_recalls.py       # produces data/clean/recalls.csv
+│   ├── build_events.py        # produces data/clean/events.csv
+│   ├── build_hyper.py         # produces data/clean/fda_recalls.hyper
 │   └── profile_raw.py         # ad-hoc exploration script (not part of the pipeline)
 ├── data/                      # gitignored — reproducible from src/*.py
 │   ├── raw/food_enforcement/  # untouched API response pages + manifest.json
-│   └── clean/                 # recalls.csv + cleaning_report.json
+│   └── clean/                 # recalls.csv, events.csv, fda_recalls.hyper, *_report.json
+├── tableau/
+│   └── BUILD_SPEC.md          # executable spec for the Tableau workbook build
 ├── pyproject.toml
 ├── uv.lock
 └── .python-version
 ```
 
-Git repo initialized (via `uv init`) but no commits made yet as of last mapping.
-
 ## Planned next
 
-A `tableau/` directory for the workbook once the Tableau build starts. No dimension
-tables planned yet — see [data-pipeline.md](data-pipeline.md).
+The actual Tableau workbook (`.twb`/`.twbx`) — building it requires Tableau's GUI, so
+it's a manual step for the user following `tableau/BUILD_SPEC.md`. Once built, save it
+into `tableau/` alongside the spec.

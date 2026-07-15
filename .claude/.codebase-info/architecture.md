@@ -23,13 +23,17 @@ Clean/prep (scripted, reproducible)  ✅ done — src/clean_recalls.py
 Model                                ✅ fact table (recalls.csv) + events dimension
                                          (events.csv) — src/build_events.py
 Hyper extract                        ✅ done — src/build_hyper.py → fda_recalls.hyper
+Build spec                           ✅ written — tableau/BUILD_SPEC.md
 Build in Tableau                     ⬜ not started — requires Tableau Desktop/Public's
-                                         GUI, not scriptable from this environment
+                                         GUI, not scriptable from this environment;
+                                         tableau/BUILD_SPEC.md is the executable checklist
 Document                             🚧 ongoing — see data-pipeline.md
 ```
 
 See [data-pipeline.md](data-pipeline.md) for the full extraction/cleaning detail,
-schema, and every cleaning decision made.
+schema, and every cleaning decision made. See
+[tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md) for the sheet-by-sheet Tableau
+build plan: calculated fields, parameters, worksheets, dashboard layout, and actions.
 
 ## Open questions
 
