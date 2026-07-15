@@ -20,8 +20,8 @@ Extract (Python via uv)              ✅ done — src/extract_recalls.py
    → raw snapshot saved before modification
 Clean/prep (scripted, reproducible)  ✅ done — src/clean_recalls.py
    → dedupe, standardize categories, normalize dates, explicit null handling
-Model                                🚧 single denormalized fact table so far;
-                                         no separate dimension tables yet
+Model                                ✅ fact table (recalls.csv) + events dimension
+                                         (events.csv) — src/build_events.py
 Build in Tableau                     ⬜ not started
 Document                             🚧 ongoing — see data-pipeline.md
 ```

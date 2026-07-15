@@ -7,6 +7,7 @@
 ```
 src/extract_recalls.py  → data/raw/food_enforcement/*.json  (untouched API snapshots)
 src/clean_recalls.py    → data/clean/recalls.csv             (tidy fact table for Tableau)
+src/build_events.py     → data/clean/events.csv              (event-level dimension table)
 src/profile_raw.py      → ad-hoc exploration/profiling (not part of the pipeline proper)
 ```
 
@@ -68,13 +69,52 @@ firms/lots), `status`, `classification` (Class I/II/III), `voluntary_mandated`,
 `product_quantity`, `distribution_pattern`, `recall_initiation_date`,
 `center_classification_date`, `report_date`, `termination_date`.
 
-No dimension tables exist yet (e.g. an `events` rollup) — the plan noted this as a
-possible next step if the Tableau build calls for it. See
-[architecture.md](architecture.md) for the overall pipeline stages and
+## Events dimension — `src/build_events.py`
+
+Run: `uv run src/build_events.py` (reads `data/clean/recalls.csv`, must run after cleaning)
+
+Rolls `recalls.csv` up from one row per `recall_number` (29,223) to one row per
+`event_id` (7,790) — a real-world recall event can spawn many `recall_number` rows
+(max observed: 409, for a single large contamination incident). Verified before
+building: `recalling_firm`, `state`, `country`, and `voluntary_mandated` are always
+single-valued within an event (0% of events have more than one distinct value), so
+those roll up with `first`. `classification` and `reason_category` do vary within some
+events (2.2% and 0.7% respectively), so those use explicit rollup rules:
+
+| Column | Rollup rule | Why |
+|---|---|---|
+| `classification_primary` | Most severe classification among the event's recalls (Class I > II > III) | An event should surface its worst-case severity, not an arbitrary one |
+| `reason_category_primary` | Most common `reason_category` among the event's recalls | Representative cause for the event as a whole |
+| `status` | Least-resolved status among the event's recalls (Ongoing > Completed > Terminated) | An event isn't fully closed until every recall under it is Terminated — confirmed on a 409-recall event that was 404 Terminated + 5 still Completed |
+| `event_termination_date` | Max `termination_date`, but only if every recall in the event is `Terminated`; else null | Don't report a close date for an event that isn't fully closed |
+
+**Known source data gap**: 2 events (`event_id` 83562, 84056 — 4 recall rows total) are
+marked `Terminated` by the FDA but never got a `termination_date` populated in the
+source. Left null rather than fabricated; recorded explicitly in
+`data/clean/events_report.json` under `events_terminated_but_missing_termination_date`
+so it doesn't silently blend into the "not fully terminated" count.
+
+**Bug caught during development**: an early version assigned
+`grouped["termination_date"].max().where(...)` directly onto the output frame without
+`.values`. The output frame has a default `0..N` index while that Series is indexed by
+`event_id`, so pandas aligned by label instead of position and silently produced
+all-null output. Fixed by appending `.values` to force positional assignment, matching
+the pattern already used for the other rollup columns.
+
+## Clean schema — `data/clean/events.csv`
+
+One row per `event_id` (7,790 rows): `event_id`, `num_recalls`, `status`,
+`classification_primary`, `distinct_classifications`, `reason_category_primary`,
+`distinct_reason_categories`, `voluntary_mandated`, `recalling_firm`, `state`,
+`country`, `first_recall_initiation_date`, `last_recall_initiation_date`,
+`earliest_report_date`, `event_termination_date`.
+
+See [architecture.md](architecture.md) for the overall pipeline stages and
 [planning/PLAN.md](../../planning/PLAN.md) for the original brainstorm.
 
 ## Re-running
 
-Both scripts are idempotent — safe to re-run; extraction overwrites raw pages in place
-and cleaning regenerates `recalls.csv`/`cleaning_report.json` from whatever is currently
-in `data/raw/`.
+All three scripts are idempotent — safe to re-run. Extraction overwrites raw pages in
+place; cleaning regenerates `recalls.csv`/`cleaning_report.json` from whatever is
+currently in `data/raw/`; `build_events.py` regenerates `events.csv`/`events_report.json`
+from whatever is currently in `data/clean/recalls.csv`.
