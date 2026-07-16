@@ -1,6 +1,6 @@
 # Tableau Build Spec — FDA Food Recalls Dashboard
 
-*Last Updated: 2026-07-15*
+*Last Updated: 2026-07-16*
 
 A concrete, executable checklist for building the dashboard in Tableau Desktop/Public.
 Both `data/clean/fda_recalls.hyper` (full Tableau Desktop) and `data/clean/recalls.csv`
@@ -119,10 +119,19 @@ references these names).
   table existing at all, so don't skip it.
 - Mark type: Bar.
 - Columns: `Event Size Bucket` (sorted by `Num Recalls` ascending, not alphabetically —
-  set a manual sort order matching the bucket definitions).
+  set a manual sort order matching the bucket definitions; see §10 for exactly how).
 - Rows: `COUNT(Event Id)`.
-- Tooltip: mention the largest single event (409 recalls) as a callout, either in the
-  tooltip or a text annotation on the dashboard.
+- Tooltip: drag `Num Recalls` onto **Detail** on the Marks card first (a field only
+  referenced inside tooltip text, never added to the view, won't resolve — it'll show
+  the raw `<Field Name>` placeholder instead of a value). Then add a tooltip line:
+  `"Largest event in this bucket: up to " + STR(MAX([Num Recalls])) + " recalls"` —
+  unconditional, no `IF`/null-hiding needed, since every bucket has a meaningful max.
+  Don't try to callout "the single largest event in the whole dataset" here: each mark
+  on this sheet is a *bucket* aggregating many events, not one event, so comparing raw
+  `[Num Recalls]` against the dataset's overall max doesn't correspond to anything real
+  at this grain. Save that specific callout (`[Num Recalls] = {FIXED : MAX([Num Recalls])}`,
+  with no `ELSE` so the line auto-hides everywhere else) for `Detail — Recall Records`,
+  where each mark actually is one event/recall.
 
 ### Sheet: `Detail — Recall Records` (drill-down table)
 - Mark type: Automatic (table).
@@ -207,3 +216,71 @@ Dashboard menu → **Actions → Add Action**.
   extract itself.
 - Save the packaged workbook (`.twbx`) into `tableau/` in this repo alongside this spec
   once built, so the repo captures the finished artifact, not just the recipe.
+
+## 10. Build how-tos & gotchas (from the actual build)
+
+Practical notes captured while actually building this, referenced from the sheet specs
+above.
+
+### Sorting a bar descending by a measure
+Three equivalent ways (e.g. `Reason — Recalls by Category`, sorted by `COUNT(Recall Number)`):
+- **Toolbar**: click the sheet, then the sort-descending icon in the toolbar (bars
+  stepping down, down arrow) — sorts the active axis by whatever measure is in the view.
+- **Right-click**: right-click the dimension pill (e.g. `Reason Category`) on
+  Rows/Columns → **Sort…** → Sort order Descending, Sort by Field, pick the measure and
+  aggregation.
+- **Hover on the axis**: small sort arrows appear directly on the axis header when you
+  hover near it in the view.
+
+### Manual sort order (e.g. `Event Size Bucket`)
+The bucket labels (`1 (single recall)`, `2–5`, `6–20`, `21–100`, `100+`) sort wrong
+alphabetically, so they need an explicit order:
+- **Per-worksheet**: right-click the pill → **Sort…** → Manual → drag the values into
+  order. (Or just drag a bar/label directly in the view — Tableau switches that field to
+  manual sort automatically.)
+- **Reusable across every sheet**: right-click the field in the Data pane instead →
+  **Default Properties → Sort…** → same Manual drag-to-order, but set once at the field
+  level.
+- **Most robust**: manual sort is just a saved list of label strings and silently breaks
+  if a bucket is ever renamed. A numeric sort-key calc avoids that:
+  ```
+  IF [Num Recalls] = 1 THEN 1
+  ELSEIF [Num Recalls] <= 5 THEN 2
+  ELSEIF [Num Recalls] <= 20 THEN 3
+  ELSEIF [Num Recalls] <= 100 THEN 4
+  ELSE 5
+  END
+  ```
+  then Sort → Field → this calc, ascending.
+
+### Adding a dynamic callout to a tooltip
+General pattern for a note that should only appear on the mark it's relevant to (not
+clutter every tooltip):
+1. Write a calculated field that returns text conditionally and has **no `ELSE`** — it
+   defaults to `NULL`, and Tableau auto-hides a tooltip line when the inserted field is
+   null for that mark. Example (per-event grain only — see the gotcha below):
+   ```
+   IF [Num Recalls] = {FIXED : MAX([Num Recalls])}
+   THEN "⚠ Largest recall event in the dataset — " + STR([Num Recalls]) + " recalls"
+   END
+   ```
+   Note the `{FIXED : ...}` — a bare `{MAX(...)}` with no `FIXED`/`INCLUDE`/`EXCLUDE`
+   keyword isn't valid Tableau LOD syntax.
+2. Add the field to the Marks card → **Detail** (required — see gotcha below).
+3. On Marks → **Tooltip**, place the cursor on a new line and use the **Insert**
+   dropdown to add the field (don't hand-type `<Field Name>` — that's just literal text,
+   not a live reference).
+4. Select the inserted placeholder and use the mini formatting toolbar (bold/color/size)
+   to make it actually read as a callout.
+
+**Gotcha hit while building this**: a calculated field referenced only in tooltip text,
+never added to any Marks card shelf, renders as the literal placeholder `<Field Name>`
+instead of its value — it has to be on **Detail** (or Color/Size/Label) to be part of
+the view's underlying query. A related, easy-to-miss trap: if the view is aggregated
+above the grain the calc assumes (e.g. `Events — Size Distribution`'s marks are whole
+*buckets*, not individual events), a per-row comparison like `[Num Recalls] = {FIXED :
+MAX([Num Recalls])}` doesn't correspond to anything meaningful — it'll evaluate to
+`NULL` for every mark, silently, with no error. That's why that sheet's tooltip uses
+`MAX([Num Recalls])` unconditionally per bucket instead of the single-largest-event
+comparison, which only makes sense on `Detail — Recall Records` where each mark is one
+event.
