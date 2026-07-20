@@ -97,3 +97,68 @@ before Tableau can do anything useful with them, and both support a narrative da
 - How much of the cleaning pipeline should live in this repo vs. a throwaway script —
   leaning toward keeping it in-repo since the pipeline is itself part of the portfolio
   value.
+
+## Ideas, 2026-07-20: shrinking the dashboard + LinkedIn preview image
+
+Not yet built — notes for a future pass on `dashboard/index.html`.
+
+### Reducing the dashboard's footprint
+
+Right now all five charts (state ranking, severity trend, cause breakdown, event-size
+distribution, resolution-time box plot) render at full size, stacked, so the page is
+tall and needs real scrolling to see everything. Idea: a compact "overview" mode with a
+click-to-focus interaction, rather than shrinking the file size (32 KB is already
+trivial) — the goal is screen footprint, so the whole dashboard reads as one glanceable
+grid instead of a long scroll.
+
+- **Thumbnail grid by default.** Render every chart card noticeably smaller (e.g. a
+  3–4 column grid of compact cards instead of the current 2-column full-size layout) —
+  smaller SVG viewBox, tighter margins, smaller fonts, caption/table-toggle hidden until
+  focused. Since every chart already renders as a `viewBox`-scaled SVG (not a raster
+  image), a "thumbnail" is mostly a CSS sizing change on the same markup, not a second
+  rendering path — cheap to build.
+- **Click to focus.** Clicking a thumbnail card expands it — likely a lightbox/modal
+  (dim the background, show that one chart at full size, centered, with a close
+  affordance) rather than growing it in place, since growing in place shoves the other
+  cards around. The existing `render*Chart` functions could be reused unchanged, just
+  invoked into a bigger container when a chart is focused (or the same SVG resized via
+  CSS, since it's viewBox-based and inherently responsive).
+- **Accessibility, since this project has been careful about it so far:** the focus
+  interaction needs keyboard support (Enter/Space to open a thumbnail, Escape to close,
+  focus trapped inside the modal while open), `role="dialog"` / `aria-modal="true"` on
+  the focused view, and the closed thumbnail state should never be the *only* way to
+  reach a chart's data — the "View as table" fallback should stay reachable without
+  going through the focus interaction at all.
+- **Nice side effect:** a compact overview grid that fits above the fold is also a much
+  better screenshot for a LinkedIn post or the social-preview image below — one image
+  showing all five charts at once, rather than a tall scrolling page.
+
+### Social preview image for LinkedIn (Open Graph tags)
+
+When a URL gets pasted into LinkedIn, the preview card LinkedIn shows comes from Open
+Graph meta tags in the page's `<head>` — nothing shows up automatically without them.
+Needed:
+
+- `<meta property="og:title" content="...">`, `og:description`, `og:url`,
+  `og:type" content="website"` — straightforward.
+- `<meta property="og:image" content="...">` — must be an **absolute** URL (crawlers
+  fetch it directly, a relative path won't resolve), ideally sized close to LinkedIn's
+  recommended ~1200×627. This means generating an actual static image first — e.g. a
+  screenshot of the (future compact) dashboard, committed into the repo and served via
+  the same GitHub Pages URL (`https://stevehome.github.io/fda-recalls-demo/social-preview.png`).
+  Playwright is already on hand from testing the dashboard during dev — the same
+  headless-screenshot approach could produce this image directly instead of a manual
+  crop.
+- Twitter Card equivalents too (`twitter:card` = `summary_large_image`, `twitter:title`,
+  `twitter:image`) — LinkedIn sometimes falls back to these, and other platforms read
+  them directly.
+- **Which file gets the tags matters.** The URL people will actually share is the
+  GitHub Pages root (`index.html`, the meta-refresh redirect to `dashboard/index.html`)
+  — crawlers read raw HTML and don't execute JS/meta-refresh, so the OG tags need to
+  live on the root `index.html` itself (not only on `dashboard/index.html`) for the
+  shared link's preview to work. Reasonable to duplicate the same tags onto
+  `dashboard/index.html` too, in case that deeper URL gets shared directly instead.
+- Separate from this: GitHub itself has its own "social preview image" setting (repo
+  Settings → General) that controls the preview when someone shares the *github.com*
+  repo URL specifically — a different mechanism from the Pages-site OG tags above, worth
+  setting too but doesn't substitute for it.
