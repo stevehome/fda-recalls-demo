@@ -128,17 +128,31 @@ was dropped). Two-file design:
   vanilla JS/SVG — no charting library, no CDN, nothing that needs a build step.
 - `src/build_dashboard.py` — pre-aggregates `recalls.csv`/`events.csv` into small JSON
   payloads (state top-15, yearly trend by classification, reason category counts, event
-  size buckets, KPIs) and string-replaces them into the template, writing
-  `dashboard/index.html`. The raw 29k-row table is never shipped to the browser — only
-  these aggregates are.
+  size buckets, resolution-time box-plot stats, KPIs) and string-replaces them into the
+  template, writing `dashboard/index.html`. The raw 29k-row table is never shipped to
+  the browser — only these aggregates are.
 
-Charts: state ranking (top 15), a severity trend over time, a cause breakdown, and an
-event-size distribution, plus a KPI row. Colors follow the `dataviz` skill's method: the
-severity trend uses an **ordinal** one-hue ramp (Class I darkest → Class III lightest,
-since severity is an ordered scale, not arbitrary categories) validated with
-`validate_palette.js --ordinal`; the single-series ranking bars use one flat validated
-hue. Every chart has hover tooltips, a keyboard-focus equivalent, and a "View as table"
-toggle (the accessibility twin required by the skill).
+Charts: state ranking (top 15), a severity trend over time, a cause breakdown, an
+event-size distribution, and a resolution-time box plot, plus a KPI row. Colors follow
+the `dataviz` skill's method: the severity trend and box plot both use the same
+**ordinal** one-hue ramp (Class I darkest → Class III lightest, since severity is an
+ordered scale, not arbitrary categories) validated with `validate_palette.js
+--ordinal`, so the color meaning is consistent everywhere classification appears; the
+single-series ranking bars use one flat validated hue. Every chart has hover tooltips, a
+keyboard-focus equivalent, and a "View as table" toggle (the accessibility twin required
+by the skill).
+
+**Resolution-time box plot**: days from `recall_initiation_date` to `termination_date`,
+grouped by `classification`, restricted to recalls that actually have a
+`termination_date` (94–97% coverage per class). Whiskers use the standard Tukey
+convention (1.5×IQR from the box) rather than true min/max — the true max runs out to
+~3,400 days and would otherwise compress the box down to an unreadable sliver at the
+bottom of the axis. The ~3–4% of points beyond the whiskers are summarized as an outlier
+count/percentage in the tooltip and table rather than plotted individually (would be
+over 1,100 dots across the three groups). The result runs counter to the naive
+hypothesis: Class I (most severe) has a slightly *longer* median resolution time (223
+days) than Class III (least severe, 204 days), not shorter — surfaced as-is in a
+dynamically generated callout rather than assuming the hypothesis would hold.
 
 **Bug caught during development**: the CSS defined light-mode variable defaults on both
 `:root` and a `.viz-root` wrapper class (`:root, .viz-root { --surface-1: ...; }`), but

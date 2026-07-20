@@ -167,8 +167,9 @@ output from the same source data. A parallel branch of the pipeline
 
 Extraction, cleaning, the events model, and the dashboard are all done —
 [`dashboard/index.html`](dashboard/index.html) is a state breakdown, a severity trend
-over time, a cause breakdown, and a view of the multi-recall events uncovered above, all
-cross-referenced against the cleaning decisions documented here. It's a single static
+over time, a cause breakdown, a view of the multi-recall events uncovered above, and a
+box plot of resolution time by severity, all cross-referenced against the cleaning
+decisions documented here. It's a single static
 file: open it in a browser, no server or build step required. Built by hand in
 HTML/CSS/SVG/vanilla JS rather than a charting library, following a documented
 color-and-marks system (see `references/` in the `dataviz` skill this was built with) —

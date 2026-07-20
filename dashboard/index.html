@@ -119,6 +119,12 @@
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .legend-swatch { width: 14px; height: 2px; border-radius: 1px; }
 
+  .chart-narrow { max-width: 420px; margin: 0 auto; }
+  .box-shape { transition: filter 0.1s ease; }
+  .box-hit:hover .box-shape, .box-hit.kbd-focus .box-shape { filter: brightness(1.12); }
+  .box-whisker { stroke-width: 2; stroke-linecap: round; }
+  .box-median { stroke-width: 2; stroke-linecap: round; }
+
   .tooltip {
     position: fixed;
     pointer-events: none;
@@ -224,6 +230,15 @@
       <button class="table-toggle" data-target="table-buckets">View as table</button>
       <table class="data-table" id="table-buckets"></table>
     </div>
+
+    <div class="chart-card full-width">
+      <h2>Resolution time by severity</h2>
+      <p class="chart-caption">Days from recall initiation to termination, restricted to recalls that have actually been terminated. Box = 25th–75th percentile, line = median, whiskers extend to 1.5×IQR (standard box-plot convention) — points beyond that are summarized as outliers, not plotted individually, in the tooltip and table.</p>
+      <div id="chart-resolution" class="chart-narrow"></div>
+      <div class="callout" id="resolution-callout"></div>
+      <button class="table-toggle" data-target="table-resolution">View as table</button>
+      <table class="data-table" id="table-resolution"></table>
+    </div>
   </div>
 
   <footer class="page-footer">
@@ -237,7 +252,7 @@
 <div class="tooltip" id="tooltip" role="tooltip"></div>
 
 <script>
-const DATA = {"kpis":{"total_recalls":29223,"total_events":7790,"pct_class_i":43.8,"date_min":"2008-02-22","date_max":"2026-06-18"},"states_top15":[{"state":"CA","count":4003},{"state":"TX","count":1935},{"state":"IL","count":1885},{"state":"NY","count":1773},{"state":"WI","count":1420},{"state":"WA","count":1409},{"state":"FL","count":1392},{"state":"MI","count":1382},{"state":"OH","count":1218},{"state":"OR","count":1065},{"state":"NJ","count":1014},{"state":"PA","count":952},{"state":"MA","count":936},{"state":"MN","count":860},{"state":"MD","count":763}],"yearly_trend":[{"year":2008,"class_i":1,"class_ii":36,"class_iii":0},{"year":2009,"class_i":18,"class_ii":1,"class_iii":0},{"year":2010,"class_i":2,"class_ii":1,"class_iii":0},{"year":2011,"class_i":14,"class_ii":41,"class_iii":2},{"year":2012,"class_i":1218,"class_ii":855,"class_iii":78},{"year":2013,"class_i":1110,"class_ii":1182,"class_iii":128},{"year":2014,"class_i":1183,"class_ii":1164,"class_iii":104},{"year":2015,"class_i":1084,"class_ii":1371,"class_iii":295},{"year":2016,"class_i":1561,"class_ii":1441,"class_iii":64},{"year":2017,"class_i":851,"class_ii":1579,"class_iii":193},{"year":2018,"class_i":643,"class_ii":1191,"class_iii":143},{"year":2019,"class_i":684,"class_ii":1051,"class_iii":72},{"year":2020,"class_i":428,"class_ii":608,"class_iii":81},{"year":2021,"class_i":677,"class_ii":768,"class_iii":56},{"year":2022,"class_i":658,"class_ii":690,"class_iii":79},{"year":2023,"class_i":1269,"class_ii":783,"class_iii":169},{"year":2024,"class_i":515,"class_ii":780,"class_iii":92},{"year":2025,"class_i":717,"class_ii":748,"class_iii":106},{"year":2026,"class_i":176,"class_ii":383,"class_iii":78}],"reason_counts":[{"category":"Undeclared Allergen","count":7571},{"category":"Listeria","count":7466},{"category":"Other","count":4951},{"category":"Salmonella","count":3464},{"category":"Foreign Material","count":2097},{"category":"Other Pathogen/Contamination","count":1068},{"category":"Insanitary/Processing","count":599},{"category":"Temperature Abuse/Spoilage","count":570},{"category":"E. coli","count":538},{"category":"Labeling/Misbranding","count":522},{"category":"Heavy Metal Contamination","count":254},{"category":"Pesticide/Chemical","count":123}],"event_buckets":[{"bucket":"1 (single recall)","count":5038},{"bucket":"2\u20135","count":1856},{"bucket":"6\u201320","count":695},{"bucket":"21\u2013100","count":175},{"bucket":"100+","count":26}],"not_yet_classified_count":1,"max_event_size":409};
+const DATA = {"kpis":{"total_recalls":29223,"total_events":7790,"pct_class_i":43.8,"date_min":"2008-02-22","date_max":"2026-06-18"},"states_top15":[{"state":"CA","count":4003},{"state":"TX","count":1935},{"state":"IL","count":1885},{"state":"NY","count":1773},{"state":"WI","count":1420},{"state":"WA","count":1409},{"state":"FL","count":1392},{"state":"MI","count":1382},{"state":"OH","count":1218},{"state":"OR","count":1065},{"state":"NJ","count":1014},{"state":"PA","count":952},{"state":"MA","count":936},{"state":"MN","count":860},{"state":"MD","count":763}],"yearly_trend":[{"year":2008,"class_i":1,"class_ii":36,"class_iii":0},{"year":2009,"class_i":18,"class_ii":1,"class_iii":0},{"year":2010,"class_i":2,"class_ii":1,"class_iii":0},{"year":2011,"class_i":14,"class_ii":41,"class_iii":2},{"year":2012,"class_i":1218,"class_ii":855,"class_iii":78},{"year":2013,"class_i":1110,"class_ii":1182,"class_iii":128},{"year":2014,"class_i":1183,"class_ii":1164,"class_iii":104},{"year":2015,"class_i":1084,"class_ii":1371,"class_iii":295},{"year":2016,"class_i":1561,"class_ii":1441,"class_iii":64},{"year":2017,"class_i":851,"class_ii":1579,"class_iii":193},{"year":2018,"class_i":643,"class_ii":1191,"class_iii":143},{"year":2019,"class_i":684,"class_ii":1051,"class_iii":72},{"year":2020,"class_i":428,"class_ii":608,"class_iii":81},{"year":2021,"class_i":677,"class_ii":768,"class_iii":56},{"year":2022,"class_i":658,"class_ii":690,"class_iii":79},{"year":2023,"class_i":1269,"class_ii":783,"class_iii":169},{"year":2024,"class_i":515,"class_ii":780,"class_iii":92},{"year":2025,"class_i":717,"class_ii":748,"class_iii":106},{"year":2026,"class_i":176,"class_ii":383,"class_iii":78}],"reason_counts":[{"category":"Undeclared Allergen","count":7571},{"category":"Listeria","count":7466},{"category":"Other","count":4951},{"category":"Salmonella","count":3464},{"category":"Foreign Material","count":2097},{"category":"Other Pathogen/Contamination","count":1068},{"category":"Insanitary/Processing","count":599},{"category":"Temperature Abuse/Spoilage","count":570},{"category":"E. coli","count":538},{"category":"Labeling/Misbranding","count":522},{"category":"Heavy Metal Contamination","count":254},{"category":"Pesticide/Chemical","count":123}],"resolution_time":[{"classification":"Class I","n":12216,"q1":111.0,"median":223.0,"q3":489.0,"whisker_lo":9.0,"whisker_hi":1056.0,"true_max":3163.0,"outlier_count":534,"outlier_pct":4.4},{"classification":"Class II","n":13820,"q1":93.0,"median":210.0,"q3":489.0,"whisker_lo":5.0,"whisker_hi":1083.0,"true_max":3071.0,"outlier_count":576,"outlier_pct":4.2},{"classification":"Class III","n":1687,"q1":91.0,"median":204.0,"q3":484.0,"whisker_lo":8.0,"whisker_hi":1052.0,"true_max":3437.0,"outlier_count":53,"outlier_pct":3.1}],"event_buckets":[{"bucket":"1 (single recall)","count":5038},{"bucket":"2\u20135","count":1856},{"bucket":"6\u201320","count":695},{"bucket":"21\u2013100","count":175},{"bucket":"100+","count":26}],"not_yet_classified_count":1,"max_event_size":409};
 
 const fmt = (n) => n.toLocaleString('en-US');
 const fmtCompact = (n) => {
@@ -435,6 +450,74 @@ function renderVBarChart(containerId, rows, opts) {
   container.appendChild(svg);
 }
 
+/* Box plot: one box+whiskers per group. Whiskers are Tukey (1.5x IQR); points
+   beyond that are summarized as an outlier count, not plotted individually. */
+function renderBoxPlot(containerId, groups, opts) {
+  const container = document.getElementById(containerId);
+  const width = 420;
+  const height = 260;
+  const leftPad = 44;
+  const rightPad = 10;
+  const topPad = 12;
+  const bottomPad = 30;
+  const plotW = width - leftPad - rightPad;
+  const plotH = height - topPad - bottomPad;
+  const axisMax = niceMax(Math.max(...groups.map(g => g.whisker_hi)));
+  const colW = plotW / groups.length;
+  const boxW = Math.min(24, colW * 0.5);
+  const yFor = (v) => topPad + plotH - (v / axisMax) * plotH;
+
+  const svg = svgEl('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': opts.ariaLabel || '' });
+
+  [0, 0.5, 1].forEach((frac) => {
+    const y = topPad + plotH * (1 - frac);
+    svg.appendChild(svgEl('line', { x1: leftPad, x2: width - rightPad, y1: y, y2: y, class: 'grid-line' }));
+    const tick = svgEl('text', { x: leftPad - 8, y: y + 3, 'text-anchor': 'end', class: 'axis-tick' });
+    tick.textContent = fmtCompact(Math.round(axisMax * frac));
+    svg.appendChild(tick);
+  });
+
+  groups.forEach((g, i) => {
+    const cx = leftPad + colW * i + colW / 2;
+    const color = opts.colorFor(g.classification);
+
+    const whisker = svgEl('line', { class: 'box-whisker', x1: cx, x2: cx, y1: yFor(g.whisker_lo), y2: yFor(g.whisker_hi), stroke: color });
+    const hit = svgEl('g', { class: 'box-hit', tabindex: '0' });
+    const hitRect = svgEl('rect', { x: cx - colW / 2, y: topPad, width: colW, height: plotH, fill: 'transparent' });
+    const box = svgEl('path', {
+      class: 'box-shape',
+      d: roundedBarPath(cx - boxW / 2, yFor(g.q3), boxW, Math.max(yFor(g.q1) - yFor(g.q3), 1), 3, { tl: true, tr: true, bl: true, br: true }),
+      fill: color,
+    });
+    const median = svgEl('line', { class: 'box-median', x1: cx - boxW / 2, x2: cx + boxW / 2, y1: yFor(g.median), y2: yFor(g.median), stroke: 'var(--surface-1)' });
+    const label = svgEl('text', { x: cx, y: height - bottomPad + 16, 'text-anchor': 'middle', class: 'bar-label' });
+    label.textContent = g.classification;
+
+    svg.appendChild(whisker);
+    hit.appendChild(hitRect); hit.appendChild(box); hit.appendChild(median);
+    svg.appendChild(hit);
+    svg.appendChild(label);
+
+    const showTt = (evt) => {
+      const pt = evt.touches ? evt.touches[0] : evt;
+      showTooltip(pt.clientX, pt.clientY, (el) => {
+        ttTitle(el, g.classification + ' (n=' + fmt(g.n) + ')');
+        ttRow(el, color, 'Median', Math.round(g.median) + ' days');
+        ttRow(el, null, 'IQR (25th–75th pct)', Math.round(g.q1) + '–' + Math.round(g.q3) + ' days');
+        ttRow(el, null, 'Whisker range', Math.round(g.whisker_lo) + '–' + Math.round(g.whisker_hi) + ' days');
+        ttRow(el, null, 'Outliers beyond whiskers', fmt(g.outlier_count) + ' (' + g.outlier_pct + '%, up to ' + fmt(Math.round(g.true_max)) + ' days)');
+      });
+    };
+    hit.addEventListener('pointermove', showTt);
+    hit.addEventListener('pointerleave', hideTooltip);
+    hit.addEventListener('focus', () => { hit.classList.add('kbd-focus'); showTt({ clientX: width / 2, clientY: 40 }); });
+    hit.addEventListener('blur', () => { hit.classList.remove('kbd-focus'); hideTooltip(); });
+  });
+
+  svg.appendChild(svgEl('line', { x1: leftPad, x2: width - rightPad, y1: topPad + plotH, y2: topPad + plotH, class: 'axis-baseline' }));
+  container.appendChild(svg);
+}
+
 /* Multi-line trend chart with crosshair + shared tooltip across series. */
 function renderLineChart(containerId, years, series, opts) {
   const container = document.getElementById(containerId);
@@ -608,6 +691,27 @@ renderVBarChart('chart-buckets', DATA.event_buckets.map(r => ({ label: r.bucket,
   color: flatColor, formatValue: fmt, valueLabel: 'Events', ariaLabel: 'Recall events by size bucket',
 });
 renderTable('table-buckets', ['Recalls per event', 'Events'], DATA.event_buckets.map(r => [r.bucket, fmt(r.count)]));
+
+const sevColor = { 'Class I': sev1, 'Class II': sev2, 'Class III': sev3 };
+renderBoxPlot('chart-resolution', DATA.resolution_time, {
+  colorFor: (cls) => sevColor[cls], ariaLabel: 'Days to termination by severity classification',
+});
+renderTable('table-resolution', ['Classification', 'n', 'Median (days)', 'Q1', 'Q3', 'Whisker range', 'Outliers'],
+  DATA.resolution_time.map(r => [
+    r.classification, fmt(r.n), Math.round(r.median), Math.round(r.q1), Math.round(r.q3),
+    Math.round(r.whisker_lo) + '–' + Math.round(r.whisker_hi),
+    fmt(r.outlier_count) + ' (' + r.outlier_pct + '%)',
+  ]));
+
+const classI = DATA.resolution_time.find(r => r.classification === 'Class I');
+const classIII = DATA.resolution_time.find(r => r.classification === 'Class III');
+const diff = Math.round(classI.median - classIII.median);
+const calloutText = diff > 0
+  ? 'Class I (most severe) takes a median of ' + Math.round(diff) + ' more day(s) to resolve than Class III (least severe) — the opposite of what severity alone would predict.'
+  : diff < 0
+    ? 'Class I (most severe) resolves ' + Math.round(-diff) + ' day(s) faster, at the median, than Class III (least severe).'
+    : 'Class I and Class III resolve in the same median number of days.';
+document.getElementById('resolution-callout').textContent = calloutText;
 </script>
 </body>
 </html>

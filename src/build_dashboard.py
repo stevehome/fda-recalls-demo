@@ -31,8 +31,30 @@ def bucket_for(num_recalls: int) -> str:
     return BUCKET_ORDER[4]
 
 
+CLASSIFICATION_ORDER = ["Class I", "Class II", "Class III"]
+
+
+def box_stats(days: pd.Series) -> dict:
+    q1, median, q3 = days.quantile([0.25, 0.5, 0.75])
+    iqr = q3 - q1
+    lo_fence, hi_fence = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+    within_fence = days[(days >= lo_fence) & (days <= hi_fence)]
+    outlier_count = int(((days < lo_fence) | (days > hi_fence)).sum())
+    return {
+        "n": int(days.count()),
+        "q1": round(float(q1), 1),
+        "median": round(float(median), 1),
+        "q3": round(float(q3), 1),
+        "whisker_lo": float(within_fence.min()),
+        "whisker_hi": float(within_fence.max()),
+        "true_max": float(days.max()),
+        "outlier_count": outlier_count,
+        "outlier_pct": round(outlier_count / len(days) * 100, 1),
+    }
+
+
 def aggregate() -> dict:
-    recalls = pd.read_csv(CLEAN_DIR / "recalls.csv", parse_dates=["recall_initiation_date"])
+    recalls = pd.read_csv(CLEAN_DIR / "recalls.csv", parse_dates=["recall_initiation_date", "termination_date"])
     events = pd.read_csv(CLEAN_DIR / "events.csv")
 
     total_recalls = len(recalls)
@@ -58,6 +80,12 @@ def aggregate() -> dict:
 
     reason_counts = recalls.groupby("reason_category").size().sort_values(ascending=False)
 
+    days_to_termination = (recalls["termination_date"] - recalls["recall_initiation_date"]).dt.days
+    resolution_time = []
+    for cls in CLASSIFICATION_ORDER:
+        days = days_to_termination[(recalls["classification"] == cls) & days_to_termination.notna()]
+        resolution_time.append({"classification": cls, **box_stats(days)})
+
     events = events.copy()
     events["bucket"] = events["num_recalls"].apply(bucket_for)
     bucket_counts = events.groupby("bucket").size().reindex(BUCKET_ORDER, fill_value=0)
@@ -77,6 +105,7 @@ def aggregate() -> dict:
             for year, row in yearly.iterrows()
         ],
         "reason_counts": [{"category": cat, "count": int(c)} for cat, c in reason_counts.items()],
+        "resolution_time": resolution_time,
         "event_buckets": [{"bucket": b, "count": int(c)} for b, c in bucket_counts.items()],
         "not_yet_classified_count": not_yet_classified_count,
         "max_event_size": max_event_size,
