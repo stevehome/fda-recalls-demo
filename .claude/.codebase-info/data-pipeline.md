@@ -1,19 +1,24 @@
 # Data Pipeline
 
-*Last Updated: 2026-07-15*
+*Last Updated: 2026-07-20*
 
 ## Overview
 
 ```
-src/extract_recalls.py  → data/raw/food_enforcement/*.json  (untouched API snapshots)
-src/clean_recalls.py    → data/clean/recalls.csv             (tidy fact table for Tableau)
-src/build_events.py     → data/clean/events.csv              (event-level dimension table)
-src/build_hyper.py      → data/clean/fda_recalls.hyper        (Tableau Hyper extract)
-src/profile_raw.py      → ad-hoc exploration/profiling (not part of the pipeline proper)
+src/extract_recalls.py     → data/raw/food_enforcement/*.json  (untouched API snapshots)
+src/clean_recalls.py       → data/clean/recalls.csv            (tidy fact table)
+src/build_events.py        → data/clean/events.csv             (event-level dimension table)
+src/build_dashboard.py     → dashboard/index.html               (active: code-driven dashboard)
+src/dashboard_template.html → static template build_dashboard.py fills in
+src/profile_raw.py         → ad-hoc exploration/profiling (not part of the pipeline proper)
+
+--- alternate path, not active (see architecture.md) ---
+src/build_hyper.py         → data/clean/fda_recalls.hyper       (Tableau Hyper extract)
 ```
 
-`data/` is gitignored — both raw and clean outputs are fully reproducible by re-running
-the scripts against the public openFDA API.
+`data/` is gitignored — raw and clean outputs are fully reproducible by re-running the
+scripts against the public openFDA API. `dashboard/index.html` **is** committed — small
+(~26 KB) and it's the actual shippable deliverable, not an intermediate artifact.
 
 ## Extraction — `src/extract_recalls.py`
 
@@ -50,9 +55,9 @@ made, generated fresh on each run).
 |---|---|---|
 | Known date typo | `F-0880-2013`'s `recall_initiation_date` `'02121207'` → `'20121207'` | Digit transposition; corroborated by that record's `report_date` (2013-01-23) and `center_classification_date` (2013-01-14) |
 | Date parsing | `recall_initiation_date`, `center_classification_date`, `report_date`, `termination_date` parsed from `YYYYMMDD` strings to real dates | `termination_date` is null for 1,500 rows — legitimate (recall still `Ongoing`/`Completed`, not `Terminated`) |
-| State cleanup | New `state` column: valid 2-letter US code or null; original preserved in `state_raw` | Source `state` mixes blank, `"N/A"`, and spelled-out Canadian provinces (British Columbia, Ontario, etc.) with US postal codes — unsafe to feed directly into Tableau's US state geo role |
+| State cleanup | New `state` column: valid 2-letter US code or null; original preserved in `state_raw` | Source `state` mixes blank, `"N/A"`, and spelled-out Canadian provinces (British Columbia, Ontario, etc.) with US postal codes — unsafe to use directly for any state-level breakdown |
 | `voluntary_mandated` | Blank/`"N/A"` → `"Unknown"` | Consistent categorical values |
-| `reason_category` (new column) | Derived from free-text `reason_for_recall` via ordered regex rules (see `REASON_CATEGORY_RULES` in the script) | Source has no structured recall-cause field; this is what enables a "recalls by cause" view in Tableau. Heuristic, not exact — ~17% of rows fall into `"Other"` |
+| `reason_category` (new column) | Derived from free-text `reason_for_recall` via ordered regex rules (see `REASON_CATEGORY_RULES` in the script) | Source has no structured recall-cause field; this is what enables a "recalls by cause" chart. Heuristic, not exact — ~17% of rows fall into `"Other"` |
 | Dropped columns | `product_type` (constant `"Food"` across this endpoint), `openfda` (always empty) | No information value |
 
 `reason_category` buckets (largest first, as of last run): Undeclared Allergen,
@@ -110,23 +115,68 @@ One row per `event_id` (7,790 rows): `event_id`, `num_recalls`, `status`,
 `country`, `first_recall_initiation_date`, `last_recall_initiation_date`,
 `earliest_report_date`, `event_termination_date`.
 
-## Hyper extract — `src/build_hyper.py`
+## Dashboard — `src/build_dashboard.py` + `src/dashboard_template.html`
+
+Run: `uv run src/build_dashboard.py` (reads `recalls.csv` and `events.csv`, must run
+after both)
+
+The active visualization path (see [architecture.md](architecture.md) for why Tableau
+was dropped). Two-file design:
+
+- `src/dashboard_template.html` — a static HTML/CSS/JS file with placeholder tokens
+  (`__DASHBOARD_DATA__`, `__TOTAL_RECALLS__`, etc.). All charting is hand-written
+  vanilla JS/SVG — no charting library, no CDN, nothing that needs a build step.
+- `src/build_dashboard.py` — pre-aggregates `recalls.csv`/`events.csv` into small JSON
+  payloads (state top-15, yearly trend by classification, reason category counts, event
+  size buckets, KPIs) and string-replaces them into the template, writing
+  `dashboard/index.html`. The raw 29k-row table is never shipped to the browser — only
+  these aggregates are.
+
+Charts: state ranking (top 15), a severity trend over time, a cause breakdown, and an
+event-size distribution, plus a KPI row. Colors follow the `dataviz` skill's method: the
+severity trend uses an **ordinal** one-hue ramp (Class I darkest → Class III lightest,
+since severity is an ordered scale, not arbitrary categories) validated with
+`validate_palette.js --ordinal`; the single-series ranking bars use one flat validated
+hue. Every chart has hover tooltips, a keyboard-focus equivalent, and a "View as table"
+toggle (the accessibility twin required by the skill).
+
+**Bug caught during development**: the CSS defined light-mode variable defaults on both
+`:root` and a `.viz-root` wrapper class (`:root, .viz-root { --surface-1: ...; }`), but
+the dark-mode media-query override only targeted `:root`. Since `.viz-root` re-declared
+the same custom properties, its descendants inherited the hardcoded light value instead
+of cascading through `:root`'s dark override — cards stayed light-themed inside a
+dark page, and white KPI text became invisible on a white card. Caught by actually
+rendering the page in a headless browser (Playwright) in both color schemes and
+screenshotting it, not by reasoning about the CSS. Fixed by declaring the variables on
+`:root` only.
+
+Also fixed before shipping: vertical bars exceeded the skill's ≤24px thickness cap (were
+up to 48px), bar corners were rounded on all four sides instead of just the tip (square
+at the baseline is the spec), axis ticks used raw fractional values instead of
+human-friendly rounded numbers, and the severity trend's three direct end-labels
+collided at the right edge where the lines converge — dropped in favor of the legend +
+tooltip, per the skill's guidance on converging series.
+
+Verified: headless-browser run in light and dark mode with zero console/page errors,
+table-view toggle interaction tested, and all embedded aggregate numbers cross-checked
+against `cleaning_report.json`/`events_report.json` (29,223 recalls, 7,790 events, event
+buckets summing to 7,790, etc.).
+
+## Alternate path (not active): Hyper extract — `src/build_hyper.py`
 
 Run: `uv run src/build_hyper.py` (reads `recalls.csv` and `events.csv`, must run after
 both)
 
 Uses `pantab` (wraps Tableau's official Hyper API) to package both tables into a single
 `data/clean/fda_recalls.hyper` (9.2 MB, smaller than the 17 MB `recalls.csv` alone) —
-the native, optimized data source format for Tableau, so the portfolio piece doesn't
-connect to raw CSVs. Contains two tables, `recalls` and `events`; open the file directly
-in Tableau Desktop/Public and create a relationship on `event_id` (not baked into the
-extract itself — Tableau relationships are defined at the workbook/data-source layer,
-not inside a `.hyper` file). Verified by reading the extract back with `pantab` and
-confirming row counts (29,223 / 7,790), column set, and date typing all match the source
-CSVs.
-
-No Tableau workbook (`.twb`/`.twbx`) exists yet — building the actual dashboard requires
-Tableau Desktop/Public's GUI, which isn't something scriptable from here.
+the native, optimized data source format for Tableau. Contains two tables, `recalls` and
+`events`; open the file directly in Tableau Desktop and create a relationship on
+`event_id` (not baked into the extract itself). Verified by reading the extract back
+with `pantab` and confirming row counts, column set, and date typing all match the
+source CSVs. Tableau Public can't open this file directly (see
+[tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md) for the CSV-based workaround it
+documents) — this, plus Tableau's story feature being mid-rewrite, is why the project
+moved to the code-driven dashboard above instead.
 
 See [architecture.md](architecture.md) for the overall pipeline stages and
 [planning/PLAN.md](../../planning/PLAN.md) for the original brainstorm.
@@ -136,5 +186,6 @@ See [architecture.md](architecture.md) for the overall pipeline stages and
 All scripts are idempotent — safe to re-run. Extraction overwrites raw pages in place;
 cleaning regenerates `recalls.csv`/`cleaning_report.json` from whatever is currently in
 `data/raw/`; `build_events.py` regenerates `events.csv`/`events_report.json` from
-whatever is currently in `data/clean/recalls.csv`; `build_hyper.py` regenerates
-`fda_recalls.hyper` from whatever is currently in both clean CSVs.
+whatever is currently in `data/clean/recalls.csv`; `build_dashboard.py` regenerates
+`dashboard/index.html` from whatever is currently in both clean CSVs; `build_hyper.py`
+(alternate path) regenerates `fda_recalls.hyper` the same way.

@@ -1,5 +1,16 @@
 # Tableau Demo Project — Planning Notes
 
+> **Update, 2026-07-20:** the project moved off Tableau entirely — Tableau Public
+> couldn't open the `.hyper` extract (no local-file support), and separately Tableau's
+> story-writing feature was mid-rewrite and unreliable to build against. Rather than
+> keep working around a moving-target GUI tool, the dashboard step became a
+> self-contained, code-driven HTML page instead (`src/build_dashboard.py` →
+> `dashboard/index.html`) — no GUI dependency, fully reproducible, versioned in git like
+> the rest of the pipeline. The Tableau path (`tableau/BUILD_SPEC.md`, the Hyper extract
+> builder) is left in place as still-valid, just not the active path. Everything below
+> is the original brainstorm and reflects the project's starting point, not its current
+> state — see the README for what actually shipped.
+
 Goal: a portfolio-style project that shows off Tableau skills end-to-end — not just a
 pretty dashboard on a tidy Kaggle CSV, but a story that starts with messy public data,
 shows real cleaning/prep decisions, and ends in an interactive, insight-driven dashboard.

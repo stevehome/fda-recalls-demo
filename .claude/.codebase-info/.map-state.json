@@ -1,8 +1,8 @@
 {
   "tool": "codebase-mapper",
   "version": "2.5.0",
-  "mappedAt": "2026-07-15",
-  "gitCommit": null,
+  "mappedAt": "2026-07-20",
+  "gitCommit": "df707ac689d39bc3725040224d5b7923d2ef07e2",
   "documents": [
     "architecture.md",
     "data-pipeline.md",

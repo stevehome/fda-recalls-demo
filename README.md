@@ -1,14 +1,20 @@
-# FDA Food Recalls: from messy government data to a Tableau dashboard
+# FDA Food Recalls: from messy government data to a working dashboard
 
-A portfolio project built around a simple premise: a Tableau dashboard is only as
-convincing as the data behind it, and most public datasets aren't clean enough to point
-a BI tool at directly. This one pulls ~29,000 FDA food recall records from a live
-government API and works through the real cleaning problems in that data — a corrupted
-date, an inconsistent geography field, a missing structured "cause of recall" field —
-before it ever reaches Tableau.
+A portfolio project built around a simple premise: a dashboard is only as convincing as
+the data behind it, and most public datasets aren't clean enough to point a BI tool at
+directly. This one pulls ~29,000 FDA food recall records from a live government API and
+works through the real cleaning problems in that data — a corrupted date, an
+inconsistent geography field, a missing structured "cause of recall" field — before any
+of it reaches a chart.
 
 The point isn't the dashboard alone. It's showing the judgment calls that got the data
 there: what got fixed, what got left alone, and why.
+
+The project started as a Tableau demo (see `planning/PLAN.md` and `tableau/` for that
+work — a Hyper extract and a full build spec, both still valid). It later moved to a
+self-contained, code-driven HTML dashboard instead: no GUI tool in the loop, so every
+chart decision is in source control and reproducible from a single command rather than
+a saved workbook.
 
 ## The data
 
@@ -111,6 +117,28 @@ covering four recall records, are marked `Terminated` but were never given a
 `termination_date` in the source. That gap is preserved as a null and logged explicitly
 in the pipeline's output report — not filled in with a guessed date.
 
+## Problem 6: a dashboard that looked fine until dark mode
+
+The dashboard supports both light and dark mode, following a design system where every
+color is validated for colorblind-safety and contrast rather than picked by eye (the
+severity trend, for instance, uses one hue at three lightness steps — Class I darkest,
+Class III lightest — because classification is an ordered severity scale, not an
+arbitrary set of categories, and coloring it that way is what the validator's ordinal
+check is for).
+
+The first render looked correct in light mode and subtly broken in dark mode: card
+backgrounds stayed light while the page around them went dark, and KPI numbers turned
+invisible — white text on a card that never got the memo. The cause was a CSS scoping
+mistake, not a color mistake: a wrapper element re-declared the same custom properties
+that the dark-mode override was targeting on a different element, so its descendants
+inherited the hardcoded light value instead of cascading through to the override. It
+rendered fine in the mode that happened to match the hardcoded default and broke
+silently in the other one. Caught by actually loading the page in a headless browser in
+both modes and screenshotting it, rather than trusting that "it validated" meant "it
+renders" — a palette check and a render check are different guarantees, and this project
+had already learned (see Problem 5) that catching that kind of thing costs one screenshot
+and skipping it costs a shipped bug.
+
 ## What the pipeline produces
 
 ```
@@ -124,22 +152,30 @@ data/clean/recalls.csv       — 29,223 rows, one per recall
    │  roll up on event_id, with rules only where the data actually varies
    ▼
 data/clean/events.csv        — 7,790 rows, one per real-world recall event
-   │  package into Tableau's native format
+   │  pre-aggregate + render: no raw rows shipped to the browser
    ▼
-data/clean/fda_recalls.hyper — ready to open directly in Tableau
+dashboard/index.html         — a single self-contained, interactive HTML file
 ```
 
 Every step is a small, reproducible Python script (`src/`), not a one-off notebook or a
 manually edited spreadsheet — re-running the pipeline from scratch produces the same
-output from the same source data.
+output from the same source data. A parallel branch of the pipeline
+(`src/build_hyper.py`) still produces a Tableau-ready extract, documented in
+[`tableau/BUILD_SPEC.md`](tableau/BUILD_SPEC.md), if that path is picked back up.
 
 ## Status
 
-Extraction, cleaning, the events model, and the Tableau extract are done. The dashboard
-itself — a US map, a recall trend over time, a breakdown by cause, and a view of the
-multi-recall events uncovered above — is being built directly in Tableau following
-[`tableau/BUILD_SPEC.md`](tableau/BUILD_SPEC.md), since that step requires Tableau's own
-interface rather than code.
+Extraction, cleaning, the events model, and the dashboard are all done —
+[`dashboard/index.html`](dashboard/index.html) is a state breakdown, a severity trend
+over time, a cause breakdown, and a view of the multi-recall events uncovered above, all
+cross-referenced against the cleaning decisions documented here. It's a single static
+file: open it in a browser, no server or build step required. Built by hand in
+HTML/CSS/SVG/vanilla JS rather than a charting library, following a documented
+color-and-marks system (see `references/` in the `dataviz` skill this was built with) —
+every categorical/ordinal color choice is validated for colorblind-safety and contrast
+before use, not eyeballed. Verified in a headless browser in both light and dark mode
+before shipping (no console errors, correct data, working tooltips and table-view
+fallback).
 
 ## Running it
 
@@ -148,8 +184,10 @@ uv sync
 uv run src/extract_recalls.py    # pull raw data from openFDA
 uv run src/clean_recalls.py      # produce data/clean/recalls.csv
 uv run src/build_events.py       # produce data/clean/events.csv
-uv run src/build_hyper.py        # produce data/clean/fda_recalls.hyper
+uv run src/build_dashboard.py    # produce dashboard/index.html
 ```
+
+Then open `dashboard/index.html` directly in a browser — no server needed.
 
 Full technical detail on every transformation — exact formulas, row counts, and the
 generated validation reports — lives in

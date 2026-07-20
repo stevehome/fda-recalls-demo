@@ -1,15 +1,20 @@
 # Onboarding
 
-*Last Updated: 2026-07-15*
+*Last Updated: 2026-07-20*
 
 ## Current state
 
-The full data pipeline is done: extraction, cleaning, the events dimension table, and a
-packaged Tableau Hyper extract. `data/clean/fda_recalls.hyper` (two tables: `recalls`
-29,223 rows, `events` 7,790 rows) is ready to open directly in Tableau Desktop/Public.
-No Tableau workbook exists yet — this environment can't drive Tableau's GUI, so the
-dashboard build itself is a manual next step for the user, guided by
-[tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md).
+The project is done end to end: extraction, cleaning, the events dimension table, and a
+finished interactive dashboard. Open [`dashboard/index.html`](../../dashboard/index.html)
+directly in a browser — no server, no build step. See [README.md](../../README.md) for
+the portfolio write-up (the cleaning decisions and the dashboard build, told as a
+narrative) and [data-pipeline.md](data-pipeline.md) for the full technical detail.
+
+The project started as a Tableau demo and pivoted to a code-driven dashboard on
+2026-07-20 (Tableau Public can't open `.hyper` files; Tableau's story feature was
+mid-rewrite). The Tableau path still exists and still works
+([tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md)), just isn't the active one — see
+[architecture.md](architecture.md).
 
 ## Quick start
 
@@ -18,28 +23,31 @@ uv sync                          # install deps
 uv run src/extract_recalls.py    # pull raw data from openFDA (idempotent, ~2 min)
 uv run src/clean_recalls.py      # produce data/clean/recalls.csv
 uv run src/build_events.py       # produce data/clean/events.csv (run after cleaning)
-uv run src/build_hyper.py        # produce data/clean/fda_recalls.hyper (run after both)
+uv run src/build_dashboard.py    # produce dashboard/index.html (run after both)
 ```
 
-`data/` is gitignored — all four commands regenerate it from scratch.
+`data/` is gitignored — all commands regenerate it from scratch. `dashboard/index.html`
+**is** committed (small, and it's the shipped deliverable).
 
-## Next steps (per the plan)
+## Possible next steps
 
-1. Resolve the open questions in [architecture.md](architecture.md): Tableau Public vs.
-   Desktop.
-2. Follow [tableau/BUILD_SPEC.md](../../tableau/BUILD_SPEC.md) step by step to build the
-   workbook in Tableau Desktop/Public, then save the finished `.twbx` into `tableau/`.
-3. Write up the cleaning decisions for the portfolio piece (data-pipeline.md already has
-   the raw material).
+Nothing required — the project is complete as a portfolio piece. If picked back up:
+
+1. A filter/date-range control on the dashboard (deliberately cut from v1 — see
+   architecture.md's open questions).
+2. Actually building the Tableau workbook from `tableau/BUILD_SPEC.md`, if the Tableau
+   angle is wanted after all.
 
 ## How to work in this repo
 
 - `uv run` / `uv add`, never bare `python3`/`pip`.
-- Work incrementally, validate each step (this pipeline was built that way — profile raw
-  data before writing cleaning rules, verify record counts against the API's own totals,
-  sample outputs before trusting them).
+- Work incrementally, validate each step. This pipeline was built that way throughout —
+  profile raw data before writing cleaning rules, verify record counts against known
+  totals, sample outputs before trusting them, and (for the dashboard) actually render
+  the page in a headless browser in both light and dark mode rather than trusting that a
+  passing color-validator check means the page renders correctly.
 
 ## Maintaining this map
 
-Run `update-codebase-map` after the Tableau workbook exists, or if the data model grows
-beyond a single fact table.
+Run `update-codebase-map` if the dashboard's chart set changes, a filter control is
+added, or the Tableau path is revived.
