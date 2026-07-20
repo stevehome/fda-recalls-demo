@@ -10,6 +10,12 @@ codebase-mapper/
 ├── planning/
 │   └── PLAN.md                 # original Tableau brainstorm + pivot note at the top
 ├── README.md                   # portfolio write-up: cleaning decisions + dashboard build
+├── index.html                  # GitHub Pages root redirect -> dashboard/index.html;
+│                                #   carries the Open Graph/Twitter Card preview tags
+├── social-preview.png          # 1200x630 OG/Twitter image; committed (see data-pipeline.md)
+├── .nojekyll                   # disables Jekyll processing on GitHub Pages
+├── scripts/
+│   └── generate_social_preview.js  # Node/Playwright, not part of the uv pipeline
 ├── src/
 │   ├── extract_recalls.py      # pulls raw recall data from openFDA
 │   ├── clean_recalls.py        # produces data/clean/recalls.csv
@@ -20,7 +26,7 @@ codebase-mapper/
 │   └── profile_raw.py          # ad-hoc exploration script (not part of the pipeline)
 ├── dashboard/
 │   └── index.html              # the shipped deliverable — committed (not gitignored),
-│                                #   ~26 KB, self-contained, no server needed
+│                                #   self-contained, no server needed
 ├── data/                       # gitignored — reproducible from src/*.py
 │   ├── raw/food_enforcement/   # untouched API response pages + manifest.json
 │   └── clean/                  # recalls.csv, events.csv, fda_recalls.hyper, *_report.json

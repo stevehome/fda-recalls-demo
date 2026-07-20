@@ -100,10 +100,13 @@ before Tableau can do anything useful with them, and both support a narrative da
 
 ## Ideas, 2026-07-20: shrinking the dashboard + LinkedIn preview image
 
-**Update: the thumbnail grid + focus-on-click below is built** (see
+**Update: both ideas below are now built.** The thumbnail grid + focus-on-click (see
 `data-pipeline.md` for the implementation writeup, including two real bugs caught
-along the way). The LinkedIn preview image (Open Graph tags) is still just notes below,
-not yet built.
+along the way), and the LinkedIn/Open Graph preview image (`index.html`'s meta tags +
+`social-preview.png`, generated via `scripts/generate_social_preview.js` — see
+`data-pipeline.md`'s "Social preview image" section). The compact thumbnail grid built
+for the first idea turned out to double as the screenshot for the second, exactly as
+predicted below.
 
 ### Reducing the dashboard's footprint
 

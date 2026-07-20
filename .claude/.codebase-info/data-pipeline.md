@@ -11,6 +11,7 @@ src/build_events.py        → data/clean/events.csv             (event-level di
 src/build_dashboard.py     → dashboard/index.html               (active: code-driven dashboard)
 src/dashboard_template.html → static template build_dashboard.py fills in
 src/profile_raw.py         → ad-hoc exploration/profiling (not part of the pipeline proper)
+scripts/generate_social_preview.js → social-preview.png (OG/Twitter image; Node/Playwright, not Python/uv)
 
 --- alternate path, not active (see architecture.md) ---
 src/build_hyper.py         → data/clean/fda_recalls.hyper       (Tableau Hyper extract)
@@ -203,6 +204,32 @@ Verified: headless-browser run in light and dark mode with zero console/page err
 table-view toggle interaction tested, and all embedded aggregate numbers cross-checked
 against `cleaning_report.json`/`events_report.json` (29,223 recalls, 7,790 events, event
 buckets summing to 7,790, etc.).
+
+## Social preview image — `scripts/generate_social_preview.js` → `social-preview.png`
+
+Open Graph / Twitter Card meta tags (`og:title`, `og:image`, `twitter:card`, etc.) are
+on both `index.html` (the root redirect — this is the URL that actually gets shared,
+and crawlers read raw HTML without executing JS/meta-refresh, so the tags have to live
+there, not only on the dashboard) and `dashboard/index.html` (via
+`dashboard_template.html`, in case that deeper URL gets shared instead). `og:image` must
+be an **absolute** URL (a relative path won't resolve for a crawler fetching it
+directly) — both point to `https://stevehome.github.io/fda-recalls-demo/social-preview.png`.
+
+`social-preview.png` (1200×630, the standard OG/Twitter size) is a screenshot of the
+dashboard's own thumbnail grid at that exact viewport size — the compact grid built for
+the thumbnail/focus feature turned out to double as a clean single-image summary of the
+whole project (header, KPIs, all five chart thumbnails, footer citation all fit in one
+frame with no cropping needed). Generated via `scripts/generate_social_preview.js`
+(Node + Playwright, same dev-time-only tool used to test the dashboard — see
+tech-landscape.md — not part of the Python/`uv` pipeline). `social-preview.png` is
+committed at the repo root, same reasoning as `dashboard/index.html`: it's a shipped
+deliverable a crawler fetches directly, not a regeneratable intermediate.
+
+Separate from this: GitHub itself has its own repo-level "social preview image" setting
+(Settings → General on the repo), which controls the preview when someone shares the
+*github.com* repo URL specifically — a different mechanism from the Pages-site OG tags
+above, and one that requires the web UI (no public REST endpoint), so it hasn't been
+set here.
 
 ## Alternate path (not active): Hyper extract — `src/build_hyper.py`
 

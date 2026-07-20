@@ -16,9 +16,10 @@
   official Hyper API) + `pyarrow` for the extract. See
   [architecture.md](architecture.md) for why this path was dropped.
 - **Dev-time only, not a runtime dependency**: Playwright + a scratch Node project (not
-  checked into this repo) were used once to headless-browser-test
-  `dashboard/index.html` in light/dark mode before shipping — the dashboard itself has
-  zero JS dependencies to view it.
+  checked into this repo) were used to headless-browser-test `dashboard/index.html` in
+  light/dark mode before shipping, and to generate `social-preview.png` (via the
+  committed `scripts/generate_social_preview.js`) — the dashboard itself has zero JS
+  dependencies to view it.
 - **Source data**: openFDA Food Enforcement API (`https://api.fda.gov/food/enforcement.json`),
   no API key required
 
@@ -29,6 +30,8 @@
   `src/build_dashboard.py`, `src/dashboard_template.html` — the active pipeline; see
   [data-pipeline.md](data-pipeline.md)
 - `src/build_hyper.py` — alternate/inactive Tableau path
+- `scripts/generate_social_preview.js` — Node, not part of the `uv` pipeline; requires
+  `npm install playwright` in a scratch directory to run
 
 ## Not yet present
 
