@@ -178,6 +178,10 @@ before use, not eyeballed. Verified in a headless browser in both light and dark
 before shipping (no console errors, correct data, working tooltips and table-view
 fallback).
 
+The five charts render as a single row of compact thumbnails by default — click one
+(or Tab to it and press Enter) to open it full-size in a focused view, so the whole
+dashboard reads as one glanceable overview instead of a page you scroll through.
+
 ## Running it
 
 ```bash

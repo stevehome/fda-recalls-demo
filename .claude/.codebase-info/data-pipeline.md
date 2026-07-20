@@ -154,6 +154,34 @@ hypothesis: Class I (most severe) has a slightly *longer* median resolution time
 days) than Class III (least severe, 204 days), not shorter — surfaced as-is in a
 dynamically generated callout rather than assuming the hypothesis would hold.
 
+**Thumbnail grid + focus-on-click**: the chart grid shows all five charts as compact
+thumbnails (caption/callout/table-toggle hidden via a `.chart-extra` wrapper,
+CSS-gated on whether the card is inside the modal) so the whole dashboard reads as one
+glanceable row instead of a tall scroll. Clicking (or Enter/Space on) a card moves that
+exact DOM node — not a clone — into a modal dialog at full size; closing moves it back
+to its original grid position. Reusing the live node means no second render path and no
+duplicated event listeners. Individual chart marks (`.bar-hit`/`.box-hit` groups) are
+`tabindex="-1"` by default and only flipped to `0` while their card is in the modal, so
+Tab in grid mode goes straight from one thumbnail to the next instead of visiting every
+bar/box first (~35 marks across the five charts). The background (`.wrap`) is marked
+`inert` while the modal is open, and a manual Tab-wrap keeps focus cycling inside the
+modal's own focusable set. `role="button"`/`aria-label` on each card, `role` semantics
+aside, this is genuinely keyboard-operable, not just mouse-only.
+
+Two real bugs caught building this (both confirmed with Playwright driving a real
+browser, not just reasoning about the code):
+1. The modal backdrop was originally nested *inside* `.wrap`. Marking `.wrap` `inert`
+   therefore made the modal itself inert too — clicks inside it silently failed
+   (`elementFromPoint` returned `<html>` at the button's exact coordinates, since inert
+   elements are excluded from hit-testing). Fixed by moving the modal markup to a
+   sibling of `.wrap`, matching how `#tooltip` is already positioned outside it.
+2. Focus restoration on close intermittently landed on `<body>` instead of the
+   triggering card. Root cause: `modalTrigger = document.activeElement` was captured
+   *after* `modalBody.appendChild(card)` — moving a focused node to a new parent blurs
+   it, so the capture was reading the already-blurred post-move state, not the actual
+   focused element from before the move. Fixed by capturing `modalTrigger` as the very
+   first line of `openCardModal`, before any DOM manipulation.
+
 **Bug caught during development**: the CSS defined light-mode variable defaults on both
 `:root` and a `.viz-root` wrapper class (`:root, .viz-root { --surface-1: ...; }`), but
 the dark-mode media-query override only targeted `:root`. Since `.viz-root` re-declared

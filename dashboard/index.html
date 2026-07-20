@@ -86,12 +86,14 @@
   .kpi-tile .kpi-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
   .kpi-tile .kpi-value { font-size: 28px; font-weight: 650; line-height: 1.1; }
 
+  .grid-hint { font-size: 12px; color: var(--text-muted); margin: 0 0 10px; }
+
   .chart-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
   }
-  @media (max-width: 860px) {
+  @media (max-width: 560px) {
     .chart-grid { grid-template-columns: 1fr; }
   }
 
@@ -99,12 +101,60 @@
     background: var(--surface-1);
     border: 1px solid var(--border-ring);
     border-radius: 10px;
-    padding: 16px 18px 14px;
+    padding: 12px 14px 10px;
+    cursor: pointer;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
   }
-  .chart-card.full-width { grid-column: 1 / -1; }
-  .chart-card h2 { font-size: 14px; font-weight: 650; margin: 0 0 2px; }
-  .chart-card .chart-caption { font-size: 12px; color: var(--text-muted); margin: 0 0 12px; line-height: 1.4; }
-  .chart-card svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .chart-card:hover { border-color: var(--axis-line); }
+  .chart-card:focus-visible { outline: 2px solid var(--series-flat); outline-offset: 2px; }
+  .chart-card h2 { font-size: 12px; font-weight: 650; margin: 0 0 6px; }
+  .chart-card .chart-caption { font-size: 12px; color: var(--text-muted); margin: 10px 0 12px; line-height: 1.4; }
+  .chart-card svg { display: block; width: 100%; height: auto; overflow: visible; pointer-events: none; }
+
+  /* Grid (thumbnail) mode hides detail; the modal reveals it at full size. */
+  .chart-card .chart-extra { display: none; }
+  .chart-modal .chart-card { cursor: default; padding: 20px 22px 18px; }
+  .chart-modal .chart-card h2 { font-size: 16px; margin-bottom: 10px; }
+  .chart-modal .chart-card .chart-extra { display: block; }
+  .chart-modal .chart-card svg { pointer-events: auto; }
+
+  .chart-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 11, 11, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 40;
+  }
+  .chart-modal-backdrop.open { opacity: 1; pointer-events: auto; }
+  .chart-modal {
+    position: relative;
+    width: min(760px, 100%);
+    max-height: 90vh;
+    overflow: auto;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+  .modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border-ring);
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text-primary); border-color: var(--axis-line); }
 
   .bar-hit { cursor: pointer; }
   .bar-hit:hover .bar-shape, .bar-hit.kbd-focus .bar-shape { filter: brightness(1.12); }
@@ -197,47 +247,59 @@
 
   <div class="kpi-row" id="kpi-row"></div>
 
+  <p class="grid-hint">Click any chart to view it in detail.</p>
+
   <div class="chart-grid">
-    <div class="chart-card">
+    <div class="chart-card" id="card-states" role="button" tabindex="0" aria-label="View in detail: Recalls by state">
       <h2>Recalls by state</h2>
-      <p class="chart-caption">Top 15 states by recall count. States with a blank or unrecognized value in the source data are excluded — see the README's cleaning notes.</p>
       <div id="chart-states"></div>
-      <button class="table-toggle" data-target="table-states">View as table</button>
-      <table class="data-table" id="table-states"></table>
+      <div class="chart-extra">
+        <p class="chart-caption">Top 15 states by recall count. States with a blank or unrecognized value in the source data are excluded — see the README's cleaning notes.</p>
+        <button class="table-toggle" data-target="table-states">View as table</button>
+        <table class="data-table" id="table-states"></table>
+      </div>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card" id="card-trend" role="button" tabindex="0" aria-label="View in detail: Recalls over time, by severity">
       <h2>Recalls over time, by severity</h2>
-      <p class="chart-caption">Classification is ordinal (Class I is most severe), so severity is shown as one hue, darker = more severe. 1 record(s) marked "Not Yet Classified" are excluded from this view. 2026 is a partial year.</p>
       <div id="chart-trend"></div>
-      <button class="table-toggle" data-target="table-trend">View as table</button>
-      <table class="data-table" id="table-trend"></table>
+      <div class="chart-extra">
+        <p class="chart-caption">Classification is ordinal (Class I is most severe), so severity is shown as one hue, darker = more severe. 1 record(s) marked "Not Yet Classified" are excluded from this view. 2026 is a partial year.</p>
+        <button class="table-toggle" data-target="table-trend">View as table</button>
+        <table class="data-table" id="table-trend"></table>
+      </div>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card" id="card-reasons" role="button" tabindex="0" aria-label="View in detail: Recalls by cause">
       <h2>Recalls by cause</h2>
-      <p class="chart-caption">Cause is derived from free-text reason_for_recall via a keyword rule set (see README) — "Other" is the heuristic's residual, not a real category.</p>
       <div id="chart-reasons"></div>
-      <button class="table-toggle" data-target="table-reasons">View as table</button>
-      <table class="data-table" id="table-reasons"></table>
+      <div class="chart-extra">
+        <p class="chart-caption">Cause is derived from free-text reason_for_recall via a keyword rule set (see README) — "Other" is the heuristic's residual, not a real category.</p>
+        <button class="table-toggle" data-target="table-reasons">View as table</button>
+        <table class="data-table" id="table-reasons"></table>
+      </div>
     </div>
 
-    <div class="chart-card">
+    <div class="chart-card" id="card-buckets" role="button" tabindex="0" aria-label="View in detail: Multi-recall events">
       <h2>Multi-recall events</h2>
-      <p class="chart-caption">One real-world recall event can trigger many recall filings — different firms, lots, or product lines tied to the same incident.</p>
       <div id="chart-buckets"></div>
-      <div class="callout">The largest single event in this dataset spans <strong>409</strong> separate recall filings.</div>
-      <button class="table-toggle" data-target="table-buckets">View as table</button>
-      <table class="data-table" id="table-buckets"></table>
+      <div class="chart-extra">
+        <p class="chart-caption">One real-world recall event can trigger many recall filings — different firms, lots, or product lines tied to the same incident.</p>
+        <div class="callout">The largest single event in this dataset spans <strong>409</strong> separate recall filings.</div>
+        <button class="table-toggle" data-target="table-buckets">View as table</button>
+        <table class="data-table" id="table-buckets"></table>
+      </div>
     </div>
 
-    <div class="chart-card full-width">
+    <div class="chart-card" id="card-resolution" role="button" tabindex="0" aria-label="View in detail: Resolution time by severity">
       <h2>Resolution time by severity</h2>
-      <p class="chart-caption">Days from recall initiation to termination, restricted to recalls that have actually been terminated. Box = 25th–75th percentile, line = median, whiskers extend to 1.5×IQR (standard box-plot convention) — points beyond that are summarized as outliers, not plotted individually, in the tooltip and table.</p>
       <div id="chart-resolution" class="chart-narrow"></div>
-      <div class="callout" id="resolution-callout"></div>
-      <button class="table-toggle" data-target="table-resolution">View as table</button>
-      <table class="data-table" id="table-resolution"></table>
+      <div class="chart-extra">
+        <p class="chart-caption">Days from recall initiation to termination, restricted to recalls that have actually been terminated. Box = 25th–75th percentile, line = median, whiskers extend to 1.5×IQR (standard box-plot convention) — points beyond that are summarized as outliers, not plotted individually, in the tooltip and table.</p>
+        <div class="callout" id="resolution-callout"></div>
+        <button class="table-toggle" data-target="table-resolution">View as table</button>
+        <table class="data-table" id="table-resolution"></table>
+      </div>
     </div>
   </div>
 
@@ -247,6 +309,15 @@
        <code>.claude/.codebase-info/data-pipeline.md</code>.</p>
   </footer>
 
+</div>
+
+<!-- Outside .wrap deliberately: wrapEl.inert = true (set while the modal is open)
+     must not cascade to the modal itself, only to the page content behind it. -->
+<div class="chart-modal-backdrop" id="modal-backdrop">
+  <div class="chart-modal">
+    <button class="modal-close" id="modal-close" tabindex="-1" aria-label="Close detail view">&#10005;</button>
+    <div class="chart-modal-body" id="modal-body"></div>
+  </div>
 </div>
 
 <div class="tooltip" id="tooltip" role="tooltip"></div>
@@ -358,7 +429,7 @@ function renderHBarChart(containerId, rows, opts) {
     label.textContent = r.label;
     svg.appendChild(label);
 
-    const g = svgEl('g', { class: 'bar-hit', tabindex: '0' });
+    const g = svgEl('g', { class: 'bar-hit', tabindex: '-1' });
     const hit = svgEl('rect', { x: leftPad, y: y - 4, width: plotW + rightPad, height: barH + 8, fill: 'transparent' });
     const bar = svgEl('path', {
       class: 'bar-shape',
@@ -416,7 +487,7 @@ function renderVBarChart(containerId, rows, opts) {
     const barH = axisMax > 0 ? (r.value / axisMax) * plotH : 0;
     const y = topPad + plotH - barH;
 
-    const g = svgEl('g', { class: 'bar-hit', tabindex: '0' });
+    const g = svgEl('g', { class: 'bar-hit', tabindex: '-1' });
     const hit = svgEl('rect', { x: cx - colW / 2, y: topPad, width: colW, height: plotH, fill: 'transparent' });
     const bar = svgEl('path', {
       class: 'bar-shape',
@@ -482,7 +553,7 @@ function renderBoxPlot(containerId, groups, opts) {
     const color = opts.colorFor(g.classification);
 
     const whisker = svgEl('line', { class: 'box-whisker', x1: cx, x2: cx, y1: yFor(g.whisker_lo), y2: yFor(g.whisker_hi), stroke: color });
-    const hit = svgEl('g', { class: 'box-hit', tabindex: '0' });
+    const hit = svgEl('g', { class: 'box-hit', tabindex: '-1' });
     const hitRect = svgEl('rect', { x: cx - colW / 2, y: topPad, width: colW, height: plotH, fill: 'transparent' });
     const box = svgEl('path', {
       class: 'box-shape',
@@ -634,6 +705,71 @@ document.querySelectorAll('.table-toggle').forEach(btn => {
     const target = document.getElementById(btn.dataset.target);
     const nowVisible = target.classList.toggle('visible');
     btn.textContent = nowVisible ? 'Hide table' : 'View as table';
+  });
+});
+
+/* Thumbnail grid + focus-on-click: clicking a card moves it (the same DOM node,
+   listeners intact) into the modal at full size; closing moves it back to its
+   original position. Chart marks (bars/boxes) are only independently tabbable
+   while their card is in the modal, so Tab in grid mode skips straight from one
+   thumbnail card to the next instead of visiting every bar first. */
+const modalBackdrop = document.getElementById('modal-backdrop');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+const wrapEl = document.querySelector('.wrap');
+const cardHomes = new Map();
+let modalTrigger = null;
+
+function setMarksTabbable(card, tabbable) {
+  card.querySelectorAll('.bar-hit, .box-hit').forEach((el) => { el.tabIndex = tabbable ? 0 : -1; });
+}
+
+function openCardModal(card) {
+  if (card.parentElement === modalBody) return;
+  modalTrigger = document.activeElement; // capture before moving card - appendChild blurs it
+  cardHomes.set(card, { parent: card.parentElement, next: card.nextElementSibling });
+  modalBody.appendChild(card);
+  setMarksTabbable(card, true);
+  wrapEl.inert = true;
+  modalBackdrop.classList.add('open');
+  modalClose.tabIndex = 0;
+  modalClose.focus();
+  document.addEventListener('keydown', onModalKeydown);
+}
+
+function closeCardModal() {
+  const card = modalBody.firstElementChild;
+  if (!card) return;
+  setMarksTabbable(card, false);
+  const home = cardHomes.get(card);
+  if (home) home.parent.insertBefore(card, home.next);
+  wrapEl.inert = false;
+  modalBackdrop.classList.remove('open');
+  modalClose.tabIndex = -1;
+  document.removeEventListener('keydown', onModalKeydown);
+  if (modalTrigger) modalTrigger.focus();
+}
+
+function onModalKeydown(e) {
+  if (e.key === 'Escape') { closeCardModal(); return; }
+  if (e.key !== 'Tab') return;
+  const focusables = Array.from(modalBackdrop.querySelectorAll('button, [tabindex]:not([tabindex="-1"]), a[href]'))
+    .filter((el) => el.offsetParent !== null);
+  if (!focusables.length) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeCardModal(); });
+modalClose.addEventListener('click', closeCardModal);
+
+document.querySelectorAll('.chart-card').forEach((card) => {
+  card.addEventListener('click', () => openCardModal(card));
+  card.addEventListener('keydown', (e) => {
+    if (e.target !== card) return; // don't hijack Enter/Space meant for a real button inside
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCardModal(card); }
   });
 });
 
