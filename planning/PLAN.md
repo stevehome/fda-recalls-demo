@@ -168,3 +168,99 @@ Needed:
   Settings → General) that controls the preview when someone shares the *github.com*
   repo URL specifically — a different mechanism from the Pages-site OG tags above, worth
   setting too but doesn't substitute for it.
+
+## Ideas, 2026-07-22: more eyecatching severity colors + a data-enquiry function
+
+Not yet built — notes for a future pass. Two unrelated ideas; splitting them below.
+
+### More eyecatching severity colors
+
+Current `--sev-1/2/3` (Class I/II/III) is a single blue hue at three lightness steps —
+deliberately muted, chosen for the `dataviz` skill's ordinal-ramp accessibility checks,
+not for visual punch. "Eyecatching" and "accessible" are in real tension here, so this
+needs to stay within the same validated method rather than eyeballing brighter colors —
+tried a couple of candidates against `validate_palette.js --ordinal` directly rather
+than guessing:
+
+- **A red-hued ordinal ramp reads as far more "alarming"/eyecatching for a severity
+  scale than blue does**, and a candidate does pass cleanly: light mode
+  `#8a1f1f → #e34948 → #ec8584` passes outright. But **the same hex values fail in dark
+  mode** (`#8a1f1f` only clears 1.90:1 against the dark surface, below the 2:1 floor) —
+  unlike the current blue ramp, which happens to pass unchanged in both modes. A red
+  ramp needs a lighter, dark-mode-specific darkest step (`#a83232` clears 2.63:1) — so
+  this is a **4-color set, not 3** (a light-mode and dark-mode Class I color), a real
+  implementation cost worth knowing before starting.
+- **Orange failed on the first two tries** (`#a34e0a → #eb6834 → #f3a878` fails
+  light-end contrast in light mode; a dark-mode variant failed the adjacent-lightness
+  gap) — fixable with more iteration, but confirms this isn't a five-minute
+  find-and-replace; budget real time to land on validated hex values, the same way the
+  original blue ramp took iteration (see `data-pipeline.md`'s architecture notes).
+- **Where red would land**: the severity trend chart and the resolution-time box plot
+  both key off the same `--sev-1/2/3` variables, so a palette change is one edit
+  cascading to both charts — no per-chart rework needed.
+- **Alternative direction, not just a different hue**: instead of (or alongside) a
+  louder ordinal ramp, use the skill's **status palette** (good/warning/critical) for
+  severity instead of the ordinal method — severity really is a status-like concept.
+  Tried this directly and it **fails the ordinal checks outright** (hue spread 117°,
+  not monotone lightness) because it's a categorical/status set, not a one-hue ramp —
+  which is fine, since status colors follow different rules than ordinal ones. The real
+  cost: the skill requires status colors to always pair with an icon + label (never
+  color alone), because warning/serious sit below 3:1 contrast on a light surface by
+  design — so adopting this look isn't just a palette swap, it means adding icons next
+  to "Class I"/"Class II"/"Class III" labels wherever they appear. More visually bold,
+  but a bigger change than the red-ramp option above.
+- **Recommendation if picked up**: try the status-palette direction first for a quick
+  visual gut-check (mock up one chart, see if it actually reads better), but expect to
+  land on a refined red (or similarly warm) ordinal ramp as the actual shipped answer,
+  since it's a smaller, lower-risk change that still passes every existing accessibility
+  check this project has held itself to — swapping the palette method entirely is a
+  bigger design decision than "make severity more eyecatching" probably needs.
+
+### A data-enquiry function ("ask questions about the data")
+
+This is the one idea in this project that doesn't fit cleanly into "extend the existing
+static file" — worth thinking through the real options before building anything, since
+they have very different costs.
+
+1. **Pre-baked FAQ (static, zero new dependencies).** At build time, compute answers to
+   a fixed set of likely questions directly from the data ("Which state has the most
+   recalls?", "What's the single largest recall event?", "Do more severe recalls
+   resolve faster?") and embed them as plain text/expandable items on the dashboard —
+   essentially a generated FAQ, not real natural-language input. Fits this project's
+   existing ethos exactly: deterministic, reproducible, no runtime dependency, and the
+   pipeline already computes most of these numbers for the KPI row and callouts, so this
+   is mostly a presentation layer over data the pipeline already produces. Limitation:
+   answers a fixed list, not an open-ended question.
+2. **A structured mini query builder (still static).** Dropdowns/pickers over the
+   aggregates already embedded in the page (e.g. pick a dimension + a metric, get a
+   number back) — closer to "enhanced filtering" than "asking a question," but still
+   fully static and free. A middle ground between (1) and true NLP.
+3. **Real natural-language Q&A backed by an LLM at request time.** What "enquiry
+   function" most naturally suggests, but it's a genuine architecture change, not an
+   extension of the current file:
+   - An LLM API call needs an API key. A key can't be embedded in a static page's
+     client-side JS without being extractable from page source by anyone who looks —
+     so this requires a **server-side proxy** (a small serverless function — Cloudflare
+     Worker, Netlify/Vercel function, etc.) to hold the key and forward requests. That
+     turns "one static HTML file, GitHub Pages, $0, no moving parts" into "a site plus a
+     backend service," which is a real jump in what has to be built, hosted, and paid
+     for — not something to build silently as a small feature.
+   - Feeding the LLM the same pre-aggregated JSON already embedded on the page (rather
+     than the raw 29k-row table) as context would keep answers grounded in the actual
+     numbers and keep the request small/cheap — a lightweight RAG-style setup rather
+     than a full search index, since the "corpus" here is already small.
+   - Ongoing cost and abuse-prevention (rate limiting, so one visitor can't run up a
+     large bill) become real operational concerns that don't exist for a static site
+     today.
+4. **Client-side keyword search, no LLM, no backend.** A lighter middle ground: match
+   typed keywords ("which state", "resolution time") to the relevant chart and
+   scroll/open it — genuinely just search-as-navigation, not question-answering, but
+   fully static and immediate to build.
+
+**Recommendation if picked up**: build (1) first — it directly extends the project's
+existing reproducible-pipeline story (the answers are literally pipeline outputs,
+documented the same way every other number on the dashboard already is) and costs
+nothing to host. Treat (3) as a distinct, separate project decision — it changes the
+hosting model, introduces an ongoing cost, and needs its own security/abuse
+consideration — worth a deliberate go/no-go conversation rather than scope-creeping it
+into "add an enquiry function."
