@@ -205,6 +205,24 @@ table-view toggle interaction tested, and all embedded aggregate numbers cross-c
 against `cleaning_report.json`/`events_report.json` (29,223 recalls, 7,790 events, event
 buckets summing to 7,790, etc.).
 
+**Pre-baked FAQ**: a "Frequently asked questions" section below the chart grid, six
+questions with answers generated from `DATA.faq_facts` — a small set of additional
+numbers computed in `build_dashboard.py` (top state, top named cause, "Other" bucket
+share, mega-event count/share, voluntary vs. FDA-mandated split) alongside the numbers
+already computed for the charts. Matches option 1 from `planning/PLAN.md`'s
+2026-07-22 notes: numbers are pre-baked once in Python (traceable to a single pandas
+computation, same as every other figure in this pipeline), but the sentence wording
+lives in JS (`faqAnswers()`), so wording can be iterated on without re-running the
+pipeline. Uses native `<details>`/`<summary>` elements for the expand/collapse
+interaction rather than custom JS — free keyboard support (Enter/Space toggles,
+standard Tab order) and correct accessibility semantics from the browser itself, unlike
+the chart-card modal above which needed a hand-rolled focus trap. The "do more severe
+recalls resolve faster?" answer reuses the same direction-branching logic as the
+resolution-time chart's callout, phrased as a direct answer instead of a chart caption.
+Verified: all six answers' numbers cross-checked against independent pandas
+computations, native open/close behavior tested via both click and keyboard (Enter),
+no interference with the existing chart-modal Tab order.
+
 ## Social preview image — `scripts/generate_social_preview.js` → `social-preview.png`
 
 Open Graph / Twitter Card meta tags (`og:title`, `og:image`, `twitter:card`, etc.) are
@@ -215,15 +233,26 @@ there, not only on the dashboard) and `dashboard/index.html` (via
 be an **absolute** URL (a relative path won't resolve for a crawler fetching it
 directly) — both point to `https://stevehome.github.io/fda-recalls-demo/social-preview.png`.
 
-`social-preview.png` (1200×630, the standard OG/Twitter size) is a screenshot of the
-dashboard's own thumbnail grid at that exact viewport size — the compact grid built for
-the thumbnail/focus feature turned out to double as a clean single-image summary of the
-whole project (header, KPIs, all five chart thumbnails, footer citation all fit in one
-frame with no cropping needed). Generated via `scripts/generate_social_preview.js`
-(Node + Playwright, same dev-time-only tool used to test the dashboard — see
-tech-landscape.md — not part of the Python/`uv` pipeline). `social-preview.png` is
-committed at the repo root, same reasoning as `dashboard/index.html`: it's a shipped
-deliverable a crawler fetches directly, not a regeneratable intermediate.
+`social-preview.png` (1200×630, the standard OG/Twitter size) is the dashboard's header,
+KPI row, and chart-grid thumbnails, composited onto a fixed 1200×630 canvas. Generated
+via `scripts/generate_social_preview.js` (Node + Playwright, same dev-time-only tool
+used to test the dashboard — see tech-landscape.md — not part of the Python/`uv`
+pipeline). `social-preview.png` is committed at the repo root, same reasoning as
+`dashboard/index.html`: it's a shipped deliverable a crawler fetches directly, not a
+regeneratable intermediate.
+
+**Two-step generation, not a single screenshot**: the script first screenshots just the
+"hero" content (header through the end of the chart grid) at its *natural* height, then
+composites that onto a second, fixed-size 1200×630 canvas (matching background color)
+before writing the final file. This was a deliberate fix, not the first approach tried —
+the first version screenshotted a fixed 1200×630 viewport directly, which worked when
+the page's hero content happened to fill exactly that height, but broke as soon as the
+FAQ section was added below the chart grid: the crop caught an awkward partial slice of
+the new section instead of stopping cleanly at the grid. Clipping to the *content's own*
+height and then padding onto the fixed canvas keeps the image immune to whatever gets
+added later further down the page — and guarantees the file's actual pixel dimensions
+always match the `og:image:width`/`og:image:height` meta tags exactly, which a fixed
+viewport screenshot only did by coincidence.
 
 Separate from this: GitHub itself has its own repo-level "social preview image" setting
 (Settings → General on the repo), which controls the preview when someone shares the

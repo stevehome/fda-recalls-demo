@@ -91,6 +91,34 @@ def aggregate() -> dict:
     bucket_counts = events.groupby("bucket").size().reindex(BUCKET_ORDER, fill_value=0)
     max_event_size = int(events["num_recalls"].max())
 
+    # Facts for the pre-baked FAQ - computed once here (not client-side) so every
+    # number is traceable straight back to a pandas computation, same as everything
+    # else in this pipeline. Sentence wording lives in the JS template, not here.
+    top_state_row = states_top15.index[0], int(states_top15.iloc[0])
+    reason_counts_no_other = reason_counts.drop("Other", errors="ignore")
+    top_reason_row = reason_counts_no_other.index[0], int(reason_counts_no_other.iloc[0])
+    other_count = int(reason_counts.get("Other", 0))
+    mega_events = events[events["num_recalls"] > 100]
+    voluntary_counts = recalls["voluntary_mandated"].value_counts()
+
+    faq_facts = {
+        "top_state": {
+            "name": top_state_row[0],
+            "count": top_state_row[1],
+            "pct": round(top_state_row[1] / total_recalls * 100, 1),
+        },
+        "top_reason": {
+            "category": top_reason_row[0],
+            "count": top_reason_row[1],
+            "pct": round(top_reason_row[1] / total_recalls * 100, 1),
+        },
+        "other_reason_pct": round(other_count / total_recalls * 100, 1),
+        "mega_event_count": int(len(mega_events)),
+        "mega_event_recalls_pct": round(int(mega_events["num_recalls"].sum()) / total_recalls * 100, 1),
+        "voluntary_pct": round(int(voluntary_counts.get("Voluntary: Firm initiated", 0)) / total_recalls * 100, 1),
+        "mandated_pct": round(int(voluntary_counts.get("FDA Mandated", 0)) / total_recalls * 100, 1),
+    }
+
     return {
         "kpis": {
             "total_recalls": total_recalls,
@@ -109,6 +137,7 @@ def aggregate() -> dict:
         "event_buckets": [{"bucket": b, "count": int(c)} for b, c in bucket_counts.items()],
         "not_yet_classified_count": not_yet_classified_count,
         "max_event_size": max_event_size,
+        "faq_facts": faq_facts,
     }
 
 

@@ -246,6 +246,46 @@
     line-height: 1.6;
   }
   footer.page-footer a { color: inherit; }
+
+  .faq-section { margin-top: 24px; }
+  .faq-heading { font-size: 16px; font-weight: 650; margin: 0 0 4px; }
+  .faq-subhead { font-size: 12px; color: var(--text-muted); margin: 0 0 12px; }
+  .faq-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .faq-item {
+    background: var(--surface-1);
+    border: 1px solid var(--border-ring);
+    border-radius: 10px;
+    padding: 4px 16px;
+  }
+  .faq-item summary {
+    cursor: pointer;
+    padding: 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: '+';
+    flex: none;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+  }
+  .faq-item[open] summary::after { transform: rotate(45deg); }
+  .faq-item summary:focus-visible { outline: 2px solid var(--series-flat); outline-offset: 2px; }
+  .faq-item p {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -317,6 +357,12 @@
       </div>
     </div>
   </div>
+
+  <section class="faq-section" aria-labelledby="faq-heading">
+    <h2 id="faq-heading" class="faq-heading">Frequently asked questions</h2>
+    <p class="faq-subhead">Answers computed directly from the same cleaned data behind the charts above — not a separate source.</p>
+    <div class="faq-list" id="faq-list"></div>
+  </section>
 
   <footer class="page-footer">
     <p>Data: U.S. Food &amp; Drug Administration, openFDA Food Enforcement API (public domain).
@@ -715,6 +761,66 @@ function renderTable(tableId, headers, rows) {
   table.appendChild(tbody);
 }
 
+/* Answers are sentences generated from DATA.faq_facts (computed once in
+   build_dashboard.py via pandas) - the numbers are pre-baked at build time,
+   the wording lives here so it can be iterated on without re-running the
+   pipeline. Uses <details>/<summary> for expand/collapse: free keyboard
+   support and accessibility semantics from the browser, no custom JS needed
+   for the interaction itself (unlike the chart-card modal above). */
+function faqAnswers() {
+  const f = DATA.faq_facts;
+  const classI = DATA.resolution_time.find(r => r.classification === 'Class I');
+  const classIII = DATA.resolution_time.find(r => r.classification === 'Class III');
+  const diff = Math.round(classI.median - classIII.median);
+  const resolutionAnswer = diff > 0
+    ? 'No — Class I (most severe) recalls take a median of ' + fmt(Math.round(classI.median)) + ' days to resolve, ' + fmt(diff) + ' day(s) longer than Class III (least severe, ' + fmt(Math.round(classIII.median)) + ' days). Severity alone doesn’t predict how quickly a recall closes.'
+    : diff < 0
+      ? 'Yes — Class I (most severe) recalls resolve ' + fmt(-diff) + ' day(s) faster at the median (' + fmt(Math.round(classI.median)) + ' days) than Class III (least severe, ' + fmt(Math.round(classIII.median)) + ' days).'
+      : 'Not really — Class I and Class III resolve in the same median number of days (' + fmt(Math.round(classI.median)) + ').';
+
+  return [
+    {
+      q: 'Which state has the most recalls?',
+      a: f.top_state.name + ' has the most, with ' + fmt(f.top_state.count) + ' recalls — ' + f.top_state.pct + '% of all ' + fmt(DATA.kpis.total_recalls) + ' recalls in this dataset.',
+    },
+    {
+      q: 'What’s the most common documented cause of recall?',
+      a: f.top_reason.category + ', accounting for ' + fmt(f.top_reason.count) + ' recalls (' + f.top_reason.pct + '%). Separately, about ' + f.other_reason_pct + '% of recalls fall into “Other” — the residual bucket for the free-text categorization heuristic, not a real cause category (see the README).',
+    },
+    {
+      q: 'Do more severe recalls resolve faster?',
+      a: resolutionAnswer,
+    },
+    {
+      q: 'What’s the largest single recall event, and how unusual is it?',
+      a: 'The largest event triggered ' + fmt(DATA.max_event_size) + ' separate recall filings. Only ' + fmt(f.mega_event_count) + ' events in the whole dataset span more than 100 filings each, but together they account for ' + f.mega_event_recalls_pct + '% of every individual recall record — a small number of large incidents make up an outsized share of the total.',
+    },
+    {
+      q: 'What share of recalls are the most severe classification?',
+      a: DATA.kpis.pct_class_i + '% of recalls are Class I — the FDA’s most severe classification, reserved for recalls with a reasonable probability of serious health consequences or death.',
+    },
+    {
+      q: 'Are most recalls voluntary or government-mandated?',
+      a: 'The overwhelming majority — ' + f.voluntary_pct + '% — are voluntary, initiated by the firm itself. Only ' + f.mandated_pct + '% are FDA Mandated recalls.',
+    },
+  ];
+}
+
+function renderFaq() {
+  const list = document.getElementById('faq-list');
+  faqAnswers().forEach((item) => {
+    const details = document.createElement('details');
+    details.className = 'faq-item';
+    const summary = document.createElement('summary');
+    summary.textContent = item.q;
+    const answer = document.createElement('p');
+    answer.textContent = item.a;
+    details.appendChild(summary);
+    details.appendChild(answer);
+    list.appendChild(details);
+  });
+}
+
 document.querySelectorAll('.table-toggle').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = document.getElementById(btn.dataset.target);
@@ -863,6 +969,8 @@ const calloutText = diff > 0
     ? 'Class I (most severe) resolves ' + Math.round(-diff) + ' day(s) faster, at the median, than Class III (least severe).'
     : 'Class I and Class III resolve in the same median number of days.';
 document.getElementById('resolution-callout').textContent = calloutText;
+
+renderFaq();
 </script>
 </body>
 </html>

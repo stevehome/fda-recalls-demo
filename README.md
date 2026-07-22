@@ -180,7 +180,10 @@ fallback).
 
 The five charts render as a single row of compact thumbnails by default — click one
 (or Tab to it and press Enter) to open it full-size in a focused view, so the whole
-dashboard reads as one glanceable overview instead of a page you scroll through.
+dashboard reads as one glanceable overview instead of a page you scroll through. Below
+the charts, a "Frequently asked questions" section answers six questions directly from
+the same cleaned data — every number in it is computed by the same pipeline that builds
+the charts, not a separate write-up.
 
 ## Running it
 

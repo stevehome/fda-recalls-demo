@@ -171,7 +171,12 @@ Needed:
 
 ## Ideas, 2026-07-22: more eyecatching severity colors + a data-enquiry function
 
-Not yet built — notes for a future pass. Two unrelated ideas; splitting them below.
+**Update: option 1 (pre-baked FAQ) below is built** — a "Frequently asked questions"
+section with six data-derived Q&As, using native `<details>`/`<summary>` for
+expand/collapse. See `data-pipeline.md`'s "Pre-baked FAQ" section for the
+implementation writeup. Options 2–4 (structured query builder, LLM-backed Q&A,
+keyword search) remain just notes, not built. The severity-color idea below is also
+still just notes.
 
 ### More eyecatching severity colors
 

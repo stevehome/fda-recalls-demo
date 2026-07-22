@@ -246,6 +246,46 @@
     line-height: 1.6;
   }
   footer.page-footer a { color: inherit; }
+
+  .faq-section { margin-top: 24px; }
+  .faq-heading { font-size: 16px; font-weight: 650; margin: 0 0 4px; }
+  .faq-subhead { font-size: 12px; color: var(--text-muted); margin: 0 0 12px; }
+  .faq-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .faq-item {
+    background: var(--surface-1);
+    border: 1px solid var(--border-ring);
+    border-radius: 10px;
+    padding: 4px 16px;
+  }
+  .faq-item summary {
+    cursor: pointer;
+    padding: 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::after {
+    content: '+';
+    flex: none;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--text-muted);
+    transition: transform 0.15s ease;
+  }
+  .faq-item[open] summary::after { transform: rotate(45deg); }
+  .faq-item summary:focus-visible { outline: 2px solid var(--series-flat); outline-offset: 2px; }
+  .faq-item p {
+    margin: 0 0 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
@@ -318,6 +358,12 @@
     </div>
   </div>
 
+  <section class="faq-section" aria-labelledby="faq-heading">
+    <h2 id="faq-heading" class="faq-heading">Frequently asked questions</h2>
+    <p class="faq-subhead">Answers computed directly from the same cleaned data behind the charts above — not a separate source.</p>
+    <div class="faq-list" id="faq-list"></div>
+  </section>
+
   <footer class="page-footer">
     <p>Data: U.S. Food &amp; Drug Administration, openFDA Food Enforcement API (public domain).
        Pipeline and full cleaning documentation: see the project repository README and
@@ -338,7 +384,7 @@
 <div class="tooltip" id="tooltip" role="tooltip"></div>
 
 <script>
-const DATA = {"kpis":{"total_recalls":29223,"total_events":7790,"pct_class_i":43.8,"date_min":"2008-02-22","date_max":"2026-06-18"},"states_top15":[{"state":"CA","count":4003},{"state":"TX","count":1935},{"state":"IL","count":1885},{"state":"NY","count":1773},{"state":"WI","count":1420},{"state":"WA","count":1409},{"state":"FL","count":1392},{"state":"MI","count":1382},{"state":"OH","count":1218},{"state":"OR","count":1065},{"state":"NJ","count":1014},{"state":"PA","count":952},{"state":"MA","count":936},{"state":"MN","count":860},{"state":"MD","count":763}],"yearly_trend":[{"year":2008,"class_i":1,"class_ii":36,"class_iii":0},{"year":2009,"class_i":18,"class_ii":1,"class_iii":0},{"year":2010,"class_i":2,"class_ii":1,"class_iii":0},{"year":2011,"class_i":14,"class_ii":41,"class_iii":2},{"year":2012,"class_i":1218,"class_ii":855,"class_iii":78},{"year":2013,"class_i":1110,"class_ii":1182,"class_iii":128},{"year":2014,"class_i":1183,"class_ii":1164,"class_iii":104},{"year":2015,"class_i":1084,"class_ii":1371,"class_iii":295},{"year":2016,"class_i":1561,"class_ii":1441,"class_iii":64},{"year":2017,"class_i":851,"class_ii":1579,"class_iii":193},{"year":2018,"class_i":643,"class_ii":1191,"class_iii":143},{"year":2019,"class_i":684,"class_ii":1051,"class_iii":72},{"year":2020,"class_i":428,"class_ii":608,"class_iii":81},{"year":2021,"class_i":677,"class_ii":768,"class_iii":56},{"year":2022,"class_i":658,"class_ii":690,"class_iii":79},{"year":2023,"class_i":1269,"class_ii":783,"class_iii":169},{"year":2024,"class_i":515,"class_ii":780,"class_iii":92},{"year":2025,"class_i":717,"class_ii":748,"class_iii":106},{"year":2026,"class_i":176,"class_ii":383,"class_iii":78}],"reason_counts":[{"category":"Undeclared Allergen","count":7571},{"category":"Listeria","count":7466},{"category":"Other","count":4951},{"category":"Salmonella","count":3464},{"category":"Foreign Material","count":2097},{"category":"Other Pathogen/Contamination","count":1068},{"category":"Insanitary/Processing","count":599},{"category":"Temperature Abuse/Spoilage","count":570},{"category":"E. coli","count":538},{"category":"Labeling/Misbranding","count":522},{"category":"Heavy Metal Contamination","count":254},{"category":"Pesticide/Chemical","count":123}],"resolution_time":[{"classification":"Class I","n":12216,"q1":111.0,"median":223.0,"q3":489.0,"whisker_lo":9.0,"whisker_hi":1056.0,"true_max":3163.0,"outlier_count":534,"outlier_pct":4.4},{"classification":"Class II","n":13820,"q1":93.0,"median":210.0,"q3":489.0,"whisker_lo":5.0,"whisker_hi":1083.0,"true_max":3071.0,"outlier_count":576,"outlier_pct":4.2},{"classification":"Class III","n":1687,"q1":91.0,"median":204.0,"q3":484.0,"whisker_lo":8.0,"whisker_hi":1052.0,"true_max":3437.0,"outlier_count":53,"outlier_pct":3.1}],"event_buckets":[{"bucket":"1 (single recall)","count":5038},{"bucket":"2\u20135","count":1856},{"bucket":"6\u201320","count":695},{"bucket":"21\u2013100","count":175},{"bucket":"100+","count":26}],"not_yet_classified_count":1,"max_event_size":409};
+const DATA = {"kpis":{"total_recalls":29223,"total_events":7790,"pct_class_i":43.8,"date_min":"2008-02-22","date_max":"2026-06-18"},"states_top15":[{"state":"CA","count":4003},{"state":"TX","count":1935},{"state":"IL","count":1885},{"state":"NY","count":1773},{"state":"WI","count":1420},{"state":"WA","count":1409},{"state":"FL","count":1392},{"state":"MI","count":1382},{"state":"OH","count":1218},{"state":"OR","count":1065},{"state":"NJ","count":1014},{"state":"PA","count":952},{"state":"MA","count":936},{"state":"MN","count":860},{"state":"MD","count":763}],"yearly_trend":[{"year":2008,"class_i":1,"class_ii":36,"class_iii":0},{"year":2009,"class_i":18,"class_ii":1,"class_iii":0},{"year":2010,"class_i":2,"class_ii":1,"class_iii":0},{"year":2011,"class_i":14,"class_ii":41,"class_iii":2},{"year":2012,"class_i":1218,"class_ii":855,"class_iii":78},{"year":2013,"class_i":1110,"class_ii":1182,"class_iii":128},{"year":2014,"class_i":1183,"class_ii":1164,"class_iii":104},{"year":2015,"class_i":1084,"class_ii":1371,"class_iii":295},{"year":2016,"class_i":1561,"class_ii":1441,"class_iii":64},{"year":2017,"class_i":851,"class_ii":1579,"class_iii":193},{"year":2018,"class_i":643,"class_ii":1191,"class_iii":143},{"year":2019,"class_i":684,"class_ii":1051,"class_iii":72},{"year":2020,"class_i":428,"class_ii":608,"class_iii":81},{"year":2021,"class_i":677,"class_ii":768,"class_iii":56},{"year":2022,"class_i":658,"class_ii":690,"class_iii":79},{"year":2023,"class_i":1269,"class_ii":783,"class_iii":169},{"year":2024,"class_i":515,"class_ii":780,"class_iii":92},{"year":2025,"class_i":717,"class_ii":748,"class_iii":106},{"year":2026,"class_i":176,"class_ii":383,"class_iii":78}],"reason_counts":[{"category":"Undeclared Allergen","count":7571},{"category":"Listeria","count":7466},{"category":"Other","count":4951},{"category":"Salmonella","count":3464},{"category":"Foreign Material","count":2097},{"category":"Other Pathogen/Contamination","count":1068},{"category":"Insanitary/Processing","count":599},{"category":"Temperature Abuse/Spoilage","count":570},{"category":"E. coli","count":538},{"category":"Labeling/Misbranding","count":522},{"category":"Heavy Metal Contamination","count":254},{"category":"Pesticide/Chemical","count":123}],"resolution_time":[{"classification":"Class I","n":12216,"q1":111.0,"median":223.0,"q3":489.0,"whisker_lo":9.0,"whisker_hi":1056.0,"true_max":3163.0,"outlier_count":534,"outlier_pct":4.4},{"classification":"Class II","n":13820,"q1":93.0,"median":210.0,"q3":489.0,"whisker_lo":5.0,"whisker_hi":1083.0,"true_max":3071.0,"outlier_count":576,"outlier_pct":4.2},{"classification":"Class III","n":1687,"q1":91.0,"median":204.0,"q3":484.0,"whisker_lo":8.0,"whisker_hi":1052.0,"true_max":3437.0,"outlier_count":53,"outlier_pct":3.1}],"event_buckets":[{"bucket":"1 (single recall)","count":5038},{"bucket":"2\u20135","count":1856},{"bucket":"6\u201320","count":695},{"bucket":"21\u2013100","count":175},{"bucket":"100+","count":26}],"not_yet_classified_count":1,"max_event_size":409,"faq_facts":{"top_state":{"name":"CA","count":4003,"pct":13.7},"top_reason":{"category":"Undeclared Allergen","count":7571,"pct":25.9},"other_reason_pct":16.9,"mega_event_count":26,"mega_event_recalls_pct":16.3,"voluntary_pct":98.6,"mandated_pct":1.4}};
 
 const fmt = (n) => n.toLocaleString('en-US');
 const fmtCompact = (n) => {
@@ -715,6 +761,66 @@ function renderTable(tableId, headers, rows) {
   table.appendChild(tbody);
 }
 
+/* Answers are sentences generated from DATA.faq_facts (computed once in
+   build_dashboard.py via pandas) - the numbers are pre-baked at build time,
+   the wording lives here so it can be iterated on without re-running the
+   pipeline. Uses <details>/<summary> for expand/collapse: free keyboard
+   support and accessibility semantics from the browser, no custom JS needed
+   for the interaction itself (unlike the chart-card modal above). */
+function faqAnswers() {
+  const f = DATA.faq_facts;
+  const classI = DATA.resolution_time.find(r => r.classification === 'Class I');
+  const classIII = DATA.resolution_time.find(r => r.classification === 'Class III');
+  const diff = Math.round(classI.median - classIII.median);
+  const resolutionAnswer = diff > 0
+    ? 'No — Class I (most severe) recalls take a median of ' + fmt(Math.round(classI.median)) + ' days to resolve, ' + fmt(diff) + ' day(s) longer than Class III (least severe, ' + fmt(Math.round(classIII.median)) + ' days). Severity alone doesn’t predict how quickly a recall closes.'
+    : diff < 0
+      ? 'Yes — Class I (most severe) recalls resolve ' + fmt(-diff) + ' day(s) faster at the median (' + fmt(Math.round(classI.median)) + ' days) than Class III (least severe, ' + fmt(Math.round(classIII.median)) + ' days).'
+      : 'Not really — Class I and Class III resolve in the same median number of days (' + fmt(Math.round(classI.median)) + ').';
+
+  return [
+    {
+      q: 'Which state has the most recalls?',
+      a: f.top_state.name + ' has the most, with ' + fmt(f.top_state.count) + ' recalls — ' + f.top_state.pct + '% of all ' + fmt(DATA.kpis.total_recalls) + ' recalls in this dataset.',
+    },
+    {
+      q: 'What’s the most common documented cause of recall?',
+      a: f.top_reason.category + ', accounting for ' + fmt(f.top_reason.count) + ' recalls (' + f.top_reason.pct + '%). Separately, about ' + f.other_reason_pct + '% of recalls fall into “Other” — the residual bucket for the free-text categorization heuristic, not a real cause category (see the README).',
+    },
+    {
+      q: 'Do more severe recalls resolve faster?',
+      a: resolutionAnswer,
+    },
+    {
+      q: 'What’s the largest single recall event, and how unusual is it?',
+      a: 'The largest event triggered ' + fmt(DATA.max_event_size) + ' separate recall filings. Only ' + fmt(f.mega_event_count) + ' events in the whole dataset span more than 100 filings each, but together they account for ' + f.mega_event_recalls_pct + '% of every individual recall record — a small number of large incidents make up an outsized share of the total.',
+    },
+    {
+      q: 'What share of recalls are the most severe classification?',
+      a: DATA.kpis.pct_class_i + '% of recalls are Class I — the FDA’s most severe classification, reserved for recalls with a reasonable probability of serious health consequences or death.',
+    },
+    {
+      q: 'Are most recalls voluntary or government-mandated?',
+      a: 'The overwhelming majority — ' + f.voluntary_pct + '% — are voluntary, initiated by the firm itself. Only ' + f.mandated_pct + '% are FDA Mandated recalls.',
+    },
+  ];
+}
+
+function renderFaq() {
+  const list = document.getElementById('faq-list');
+  faqAnswers().forEach((item) => {
+    const details = document.createElement('details');
+    details.className = 'faq-item';
+    const summary = document.createElement('summary');
+    summary.textContent = item.q;
+    const answer = document.createElement('p');
+    answer.textContent = item.a;
+    details.appendChild(summary);
+    details.appendChild(answer);
+    list.appendChild(details);
+  });
+}
+
 document.querySelectorAll('.table-toggle').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = document.getElementById(btn.dataset.target);
@@ -863,6 +969,8 @@ const calloutText = diff > 0
     ? 'Class I (most severe) resolves ' + Math.round(-diff) + ' day(s) faster, at the median, than Class III (least severe).'
     : 'Class I and Class III resolve in the same median number of days.';
 document.getElementById('resolution-callout').textContent = calloutText;
+
+renderFaq();
 </script>
 </body>
 </html>
