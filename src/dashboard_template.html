@@ -31,9 +31,16 @@
     --axis-line:      #c3c2b7;
     --border-ring:    rgba(11,11,11,0.10);
     --series-flat:    #2a78d6;
-    --sev-1:          #184f95; /* Class I - most severe */
-    --sev-2:          #2a78d6; /* Class II */
-    --sev-3:          #86b6ef; /* Class III - least severe */
+    /* Ordinal severity ramp: one hue (red), monotone lightness, Class I
+       darkest/most alarming -> Class III lightest. Mid step (#e34948) is the
+       reference palette's documented categorical "red" slot (palette.md),
+       not an arbitrary pick. Validated with validate_palette.js --ordinal;
+       dark mode needs a lighter darkest-step (#a83232 vs #8a1f1f) to clear
+       the 2:1 contrast floor against the dark surface - reusing the light
+       value here would fail that check. */
+    --sev-1:          #8a1f1f; /* Class I - most severe */
+    --sev-2:          #e34948; /* Class II */
+    --sev-3:          #ec8584; /* Class III - least severe */
     --sev-unknown:    #898781;
   }
   @media (prefers-color-scheme: dark) {
@@ -48,9 +55,9 @@
       --axis-line:      #383835;
       --border-ring:    rgba(255,255,255,0.10);
       --series-flat:    #3987e5;
-      --sev-1:          #184f95;
-      --sev-2:          #2a78d6;
-      --sev-3:          #86b6ef;
+      --sev-1:          #a83232;
+      --sev-2:          #e34948;
+      --sev-3:          #ec8584;
       --sev-unknown:    #898781;
     }
   }
@@ -65,9 +72,9 @@
     --axis-line:      #383835;
     --border-ring:    rgba(255,255,255,0.10);
     --series-flat:    #3987e5;
-    --sev-1:          #184f95;
-    --sev-2:          #2a78d6;
-    --sev-3:          #86b6ef;
+    --sev-1:          #a83232;
+    --sev-2:          #e34948;
+    --sev-3:          #ec8584;
     --sev-unknown:    #898781;
   }
 

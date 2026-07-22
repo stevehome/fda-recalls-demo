@@ -139,6 +139,13 @@ renders" — a palette check and a render check are different guarantees, and th
 had already learned (see Problem 5) that catching that kind of thing costs one screenshot
 and skipping it costs a shipped bug.
 
+The severity color itself later moved from a muted blue to a red ordinal ramp — a
+deliberately more eyecatching choice, but validated the same way, not eyeballed. The
+two color modes actually need different hex values for the darkest step: the light-mode
+red clears contrast fine on the light surface but falls short on the dark one, something
+the previous blue ramp happened to avoid by coincidence rather than by having been
+checked for it.
+
 ## What the pipeline produces
 
 ```

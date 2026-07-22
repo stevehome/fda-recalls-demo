@@ -171,12 +171,14 @@ Needed:
 
 ## Ideas, 2026-07-22: more eyecatching severity colors + a data-enquiry function
 
-**Update: option 1 (pre-baked FAQ) below is built** — a "Frequently asked questions"
-section with six data-derived Q&As, using native `<details>`/`<summary>` for
-expand/collapse. See `data-pipeline.md`'s "Pre-baked FAQ" section for the
-implementation writeup. Options 2–4 (structured query builder, LLM-backed Q&A,
-keyword search) remain just notes, not built. The severity-color idea below is also
-still just notes.
+**Update: both the severity-color change and the pre-baked FAQ (option 1) are now
+built.** The colors landed exactly where this section predicted — the refined red
+ordinal ramp, not the bolder status-palette direction — see `data-pipeline.md`'s
+"Severity color palette" section for the final hex values and why dark mode needed
+different ones than light mode. The FAQ section has six data-derived Q&As using native
+`<details>`/`<summary>` for expand/collapse — see `data-pipeline.md`'s "Pre-baked FAQ"
+section. Options 2–4 for the enquiry function (structured query builder, LLM-backed
+Q&A, keyword search) remain just notes, not built.
 
 ### More eyecatching severity colors
 

@@ -138,10 +138,10 @@ event-size distribution, and a resolution-time box plot, plus a KPI row. Colors 
 the `dataviz` skill's method: the severity trend and box plot both use the same
 **ordinal** one-hue ramp (Class I darkest → Class III lightest, since severity is an
 ordered scale, not arbitrary categories) validated with `validate_palette.js
---ordinal`, so the color meaning is consistent everywhere classification appears; the
-single-series ranking bars use one flat validated hue. Every chart has hover tooltips, a
-keyboard-focus equivalent, and a "View as table" toggle (the accessibility twin required
-by the skill).
+--ordinal`, so the color meaning is consistent everywhere classification appears (see
+"Severity color palette" below for the current hue); the single-series ranking bars use
+one flat validated hue. Every chart has hover tooltips, a keyboard-focus equivalent, and
+a "View as table" toggle (the accessibility twin required by the skill).
 
 **Resolution-time box plot**: days from `recall_initiation_date` to `termination_date`,
 grouped by `classification`, restricted to recalls that actually have a
@@ -154,6 +154,27 @@ over 1,100 dots across the three groups). The result runs counter to the naive
 hypothesis: Class I (most severe) has a slightly *longer* median resolution time (223
 days) than Class III (least severe, 204 days), not shorter — surfaced as-is in a
 dynamically generated callout rather than assuming the hypothesis would hold.
+
+**Severity color palette**: `--sev-1/2/3` (the trend chart and box plot's ordinal
+severity ramp) changed from a muted blue to a red-hued ordinal ramp — light mode
+`#8a1f1f → #e34948 → #ec8584`, dark mode `#a83232 → #e34948 → #ec8584` (Class I most
+severe / darkest through Class III least severe / lightest, both cases). The mid step
+(`#e34948`) is exactly the `dataviz` skill's reference palette's documented categorical
+"red" slot (`palette.md`), not an arbitrary pick — a deliberate way to anchor an
+otherwise-freeform color choice to an already-validated value. **The two modes need
+different darkest-step hex values, unlike the previous blue ramp**, which happened to
+pass `validate_palette.js --ordinal` unchanged in both modes: the light-mode darkest
+red (`#8a1f1f`) only clears 1.90:1 against the dark surface (`#1a1a19`), below the 2:1
+contrast floor, so dark mode needs a lighter step (`#a83232`, 2.63:1) instead. Both
+ramps were validated independently with `--ordinal --mode light` /
+`--mode dark --surface "#1a1a19"` before shipping. An orange-hued alternative was also
+tried and failed on the first attempt in both modes (light-end contrast, then an
+adjacent-lightness gap too small) — not pursued further once red passed cleanly. A
+bolder alternative considered but not adopted: the skill's fixed status palette
+(good/warning/critical) — it fails the ordinal checks by design (it's a categorical/
+status set, not a one-hue ramp) and would require pairing every severity label with an
+icon per the skill's rules, a larger change than a palette swap. See
+`planning/PLAN.md`'s 2026-07-22 notes for the full comparison.
 
 **Thumbnail grid + focus-on-click**: the chart grid shows all five charts as compact
 thumbnails (caption/callout/table-toggle hidden via a `.chart-extra` wrapper,
